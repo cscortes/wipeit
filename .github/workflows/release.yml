@@ -50,17 +50,17 @@ jobs:
         release_name: Release ${{ github.ref }}
         body: |
           ## Changes in this Release
-          
+
           See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
-          
+
           ## Installation
-          
+
           ```bash
           pip install wipeit
           ```
-          
+
           ## Usage
-          
+
           ```bash
           sudo wipeit /dev/sdx
           ```

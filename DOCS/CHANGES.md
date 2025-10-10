@@ -24,10 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example: `wipeit -b 1G /dev/sdx`
 - **Resume functionality** with `--resume` option
   - Automatic progress saving every 1GB or 10 chunks
-  - Graceful interruption handling with Ctrl+C
+  - Graceful interruption handling with Ctrl+C (immediate response)
   - Resume from exact interruption point
   - Progress files stored in `wipeit_progress_[device].json` (current directory)
   - 24-hour expiry for progress files
+  - Immediate write flushing and syncing for responsive interruption
   - Example: `wipeit --resume /dev/sdx`
 - **Version information** with `-v/--version` option
   - Shows current version number

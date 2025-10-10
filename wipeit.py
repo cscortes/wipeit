@@ -253,6 +253,8 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
                 to_write = min(chunk_size, remaining)
                 data = os.urandom(to_write)
                 f.write(data)
+                f.flush()  # Force immediate write to OS buffer
+                os.fsync(f.fileno())  # Force immediate write to storage device
                 written += to_write
 
                 # Save progress every 1GB or every 10 chunks,

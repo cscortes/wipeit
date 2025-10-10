@@ -46,7 +46,7 @@ jobs:
         python -c "
         from wipeit import parse_size
         import sys
-        
+
         # Test valid sizes
         valid_tests = [
             ('1M', 1024*1024),
@@ -55,12 +55,12 @@ jobs:
             ('0.5G', int(0.5*1024*1024*1024)),
             ('1T', 1024*1024*1024*1024)
         ]
-        
+
         for size_str, expected in valid_tests:
             result = parse_size(size_str)
             assert result == expected, f'Failed: {size_str} -> {result} != {expected}'
             print(f'✅ {size_str} -> {result:,} bytes')
-        
+
         # Test invalid sizes
         invalid_tests = ['500K', '2T', '0.5M', 'ABC', '100', '100MB']
         for size_str in invalid_tests:
@@ -70,7 +70,7 @@ jobs:
                 sys.exit(1)
             except (ValueError, IndexError):
                 print(f'✅ {size_str} correctly rejected')
-        
+
         print('All buffer size tests passed!')
         "
 
@@ -80,29 +80,29 @@ jobs:
         python -c "
         from wipeit import save_progress, load_progress, clear_progress, find_resume_files, display_resume_info
         import os
-        
+
         # Test complete workflow
         device = '/dev/test'
         written = 1024 * 1024 * 1024
         total_size = 4 * 1024 * 1024 * 1024
         chunk_size = 100 * 1024 * 1024
-        
+
         # Save progress
         save_progress(device, written, total_size, chunk_size)
         print('✅ Progress saved')
-        
+
         # Load progress
         progress = load_progress(device)
         assert progress is not None, 'Progress should be loadable'
         assert progress['device'] == device, 'Device should match'
         assert progress['written'] == written, 'Written bytes should match'
         print('✅ Progress loaded')
-        
+
         # Test resume file detection
         resume_files = find_resume_files()
         assert len(resume_files) == 1, 'Should find one resume file'
         print('✅ Resume file detection working')
-        
+
         # Test display (capture output)
         import io
         import sys
@@ -113,13 +113,13 @@ jobs:
         sys.stdout = old_stdout
         assert 'Found pending wipe operations' in output, 'Should display resume info'
         print('✅ Resume info display working')
-        
+
         # Clear progress
         clear_progress(device)
         progress = load_progress(device)
         assert progress is None, 'Progress should be cleared'
         print('✅ Progress cleared')
-        
+
         print('All progress file tests passed!')
         "
 
