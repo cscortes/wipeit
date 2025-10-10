@@ -74,6 +74,33 @@ To see all available block devices on your system:
 sudo wipeit
 ```
 
+**Note:** If you have pending wipe operations (interrupted wipes), the tool will first display information about them before showing available devices.
+
+**Example with pending operations:**
+```bash
+$ ./wipeit.py
+
+🔄 Found pending wipe operations:
+==================================================
+
+1. Device: /dev/sdb
+   Progress: 25.00% complete
+   Written: 1.00 GB / 4.00 GB
+   Buffer size: 100 MB
+   Started: Thu Oct  9 18:04:00 2025
+   Resume command: sudo ./wipeit.py --resume /dev/sdb
+
+💡 To resume any operation, use: sudo ./wipeit.py --resume <device>
+💡 To start fresh, the progress file will be overwritten
+==================================================
+
+==================================================
+📋 Available devices (requires sudo):
+==================================================
+Error: This program must be run as root (sudo) to list devices.
+Use: sudo ./wipeit.py
+```
+
 **Example output:**
 ```
 Device: /dev/sda
@@ -245,11 +272,12 @@ wipeit 0.1.0
 
 The tool automatically saves progress and allows resuming interrupted wipes:
 
-- **Progress files** are stored in `/tmp/wipeit_progress_[device].json`
+- **Progress files** are stored in `wipeit_progress_[device].json` (current directory)
 - **Auto-save** occurs every 1GB written or every 10 chunks
 - **Resume detection** when starting a new wipe on a device with existing progress
 - **Progress cleanup** when wipe completes successfully
 - **24-hour expiry** for progress files (prevents stale resumes)
+- **Pending operations display** when running without arguments shows all interrupted wipes
 
 ## Requirements
 

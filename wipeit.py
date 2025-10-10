@@ -107,7 +107,7 @@ def get_block_device_size(device):
 def get_progress_file(device):
     """Get the path to the progress file for a device."""
     device_name = os.path.basename(device)
-    return f"/tmp/wipeit_progress_{device_name}.json"
+    return f"wipeit_progress_{device_name}.json"
 
 
 def save_progress(device, written, total_size, chunk_size):
@@ -159,6 +159,59 @@ def clear_progress(device):
             os.remove(progress_file)
     except Exception:
         pass
+
+
+def find_resume_files():
+    """Find all progress files in the current directory."""
+    import glob
+    progress_files = glob.glob("wipeit_progress_*.json")
+    resume_info = []
+
+    for progress_file in progress_files:
+        try:
+            with open(progress_file, 'r') as f:
+                progress_data = json.load(f)
+
+            # Check if progress file is recent (within 24 hours)
+            if time.time() - progress_data.get('timestamp', 0) <= 86400:
+                resume_info.append(progress_data)
+        except Exception:
+            # Skip corrupted or invalid progress files
+            continue
+
+    return resume_info
+
+
+def display_resume_info():
+    """Display information about available resume files."""
+    resume_files = find_resume_files()
+
+    if not resume_files:
+        return False
+
+    print("🔄 Found pending wipe operations:")
+    print("=" * 50)
+
+    for i, progress_data in enumerate(resume_files, 1):
+        device = progress_data['device']
+        written = progress_data['written']
+        total_size = progress_data['total_size']
+        progress_percent = progress_data['progress_percent']
+        timestamp = progress_data['timestamp']
+        chunk_size = progress_data['chunk_size']
+
+        print(f"\n{i}. Device: {device}")
+        print(f"   Progress: {progress_percent:.2f}% complete")
+        print(f"   Written: {written / (1024**3):.2f} GB / {total_size / (1024**3):.2f} GB")
+        print(f"   Buffer size: {chunk_size / (1024**2):.0f} MB")
+        print(f"   Started: {time.ctime(timestamp)}")
+        print(f"   Resume command: sudo ./wipeit.py --resume {device}")
+
+    print(f"\n💡 To resume any operation, use: sudo ./wipeit.py --resume <device>")
+    print(f"💡 To start fresh, the progress file will be overwritten")
+    print("=" * 50)
+
+    return True
 
 
 def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
@@ -261,14 +314,25 @@ Range: 1M to 1T
                         version=f"wipeit {__version__}")
     args = parser.parse_args()
 
-    # Check if running as root (after parsing args so --help works)
-    if os.geteuid() != 0:
-        print("Error: This program must be run as root (sudo).")
-        sys.exit(1)
-
     if args.device is None:
+        # Check for resume files first (works without root)
+        if display_resume_info():
+            print("\n" + "=" * 50)
+            print("📋 Available devices (requires sudo):")
+            print("=" * 50)
+
+        # Check if running as root (after parsing args so --help works)
+        if os.geteuid() != 0:
+            print("Error: This program must be run as root (sudo) to list devices.")
+            print("Use: sudo ./wipeit.py")
+            sys.exit(1)
+
         list_all_devices()
     else:
+        # Check if running as root (after parsing args so --help works)
+        if os.geteuid() != 0:
+            print("Error: This program must be run as root (sudo).")
+            sys.exit(1)
         # Parse buffer size
         try:
             chunk_size = parse_size(args.buffer_size)

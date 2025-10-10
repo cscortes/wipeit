@@ -26,12 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic progress saving every 1GB or 10 chunks
   - Graceful interruption handling with Ctrl+C
   - Resume from exact interruption point
-  - Progress files stored in `/tmp/wipeit_progress_[device].json`
+  - Progress files stored in `wipeit_progress_[device].json` (current directory)
   - 24-hour expiry for progress files
   - Example: `wipeit --resume /dev/sdx`
 - **Version information** with `-v/--version` option
   - Shows current version number
   - Example: `wipeit --version` outputs `wipeit 0.1.0`
+- **Pending operations display** when running without arguments
+  - Automatically detects and displays interrupted wipe operations
+  - Shows progress percentage, written data, buffer size, and start time
+  - Provides exact resume commands for each pending operation
+  - Works without root privileges for checking pending operations
 
 ### Features
 - Display device information: size, model, serial number
