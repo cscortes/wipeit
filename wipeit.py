@@ -247,7 +247,10 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
             # Seek to the resume position
             if written > 0:
                 f.seek(written)
-
+            
+            # Track progress milestones for estimated finish time
+            last_milestone = int(written / size * 100) // 5 * 5  # Last 5% milestone
+            
             while written < size:
                 remaining = size - written
                 to_write = min(chunk_size, remaining)
@@ -256,22 +259,37 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
                 f.flush()  # Force immediate write to OS buffer
                 os.fsync(f.fileno())  # Force immediate write to storage device
                 written += to_write
-
+                
                 # Save progress every 1GB or every 10 chunks,
                 # whichever is smaller
                 if written % (1024**3) == 0 or \
                    written % (chunk_size * 10) == 0:
                     save_progress(device, written, size, chunk_size)
-
+                
                 elapsed = time.time() - start_time
                 speed = written / elapsed / (1024**2) if elapsed > 0 else 0
                 eta = (size - written) / (written / elapsed) \
                     if elapsed > 0 and written > 0 else 0
-                print(f"Progress: {written / size * 100:.2f}% "
-                      f"| Written: {written / (1024**3):.2f} GB | "
-                      f"Speed: {speed:.2f} MB/s | "
-                      f"ETA: {eta / 60:.2f} min | "
-                      f"Buffer: {chunk_size / (1024**2):.0f}M")
+                
+                # Check if we've crossed a 5% milestone
+                current_milestone = int(written / size * 100) // 5 * 5
+                progress_percent = written / size * 100
+                
+                # Base progress line
+                progress_line = (f"Progress: {progress_percent:.2f}% "
+                               f"| Written: {written / (1024**3):.2f} GB | "
+                               f"Speed: {speed:.2f} MB/s | "
+                               f"ETA: {eta / 60:.2f} min | "
+                               f"Buffer: {chunk_size / (1024**2):.0f}M")
+                
+                # Add estimated finish time at 5% milestones
+                if current_milestone > last_milestone and current_milestone >= 5:
+                    estimated_finish = time.time() + eta
+                    finish_time_str = time.strftime("%I:%M %p", time.localtime(estimated_finish))
+                    progress_line += f" | Estimated Finish Time: {finish_time_str}"
+                    last_milestone = current_milestone
+                
+                print(progress_line)
 
         # Wipe completed successfully
         clear_progress(device)

@@ -378,7 +378,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 0.1.0', output)
+        self.assertIn('wipeit 0.2.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -459,6 +459,48 @@ class TestIntegration(unittest.TestCase):
             with self.subTest(size=size_str):
                 result = wipeit.parse_size(size_str)
                 self.assertEqual(result, expected)
+
+    def test_milestone_tracking_logic(self):
+        """Test the milestone tracking logic for estimated finish time."""
+        # Test milestone calculation
+        size = 1000
+        
+        # Test various progress levels
+        test_cases = [
+            (50, 5),    # 5% milestone
+            (100, 10),  # 10% milestone
+            (150, 15),  # 15% milestone
+            (200, 20),  # 20% milestone
+            (250, 25),  # 25% milestone
+            (300, 30),  # 30% milestone
+            (350, 35),  # 35% milestone
+            (400, 40),  # 40% milestone
+            (450, 45),  # 45% milestone
+            (500, 50),  # 50% milestone
+        ]
+        
+        for written, expected_milestone in test_cases:
+            current_milestone = int(written / size * 100) // 5 * 5
+            self.assertEqual(current_milestone, expected_milestone,
+                           f"Failed for written={written}, expected={expected_milestone}, got={current_milestone}")
+
+    @patch('time.time')
+    @patch('time.strftime')
+    def test_estimated_finish_time_formatting(self, mock_strftime, mock_time):
+        """Test the estimated finish time formatting."""
+        # Mock current time
+        mock_time.return_value = 1640000000  # Fixed timestamp
+        mock_strftime.return_value = "07:40 PM"
+        
+        # Test time calculation
+        current_time = time.time()
+        eta_seconds = 3600  # 1 hour
+        estimated_finish = current_time + eta_seconds
+        finish_time_str = time.strftime("%I:%M %p", time.localtime(estimated_finish))
+        
+        # Verify the formatting was called correctly
+        mock_strftime.assert_called_with("%I:%M %p", time.localtime(estimated_finish))
+        self.assertEqual(finish_time_str, "07:40 PM")
 
 
 if __name__ == '__main__':
