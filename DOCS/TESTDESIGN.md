@@ -489,9 +489,9 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v1.0.0)
-- **Total Test Classes**: 8
-- **Total Test Cases**: 34
+### Current Test Coverage (v1.1.0)
+- **Total Test Classes**: 9
+- **Total Test Cases**: 40
 - **Test Coverage Breakdown**:
   - `TestParseSize`: 5 tests
   - `TestProgressFileFunctions`: 7 tests
@@ -501,20 +501,22 @@ jobs:
   - `TestIntegration`: 4 tests
   - `TestHDDPretest`: 3 tests (Added in 0.3.1)
   - `TestWipeDeviceIntegration`: 2 tests (Added in 0.3.1)
+  - `TestMountChecking`: 6 tests (Added in 1.1.0)
 
 ### Code Coverage Goals
 - **Target**: 90%+ code coverage
 - **Critical Paths**: 100% coverage for HDD pretest and adaptive chunk algorithms
-- **Current Status**: All 34 tests passing with 0 linting errors
+- **Current Status**: All 40 tests passing with 0 linting errors
 
 ## Conclusion
 
 This test design document provides comprehensive coverage for all wipeit features. It should be updated whenever new features are added to ensure complete test coverage and maintainability.
 
-### Recent Updates (v1.0.0)
+### Recent Updates (v1.1.0)
 - Added comprehensive test coverage for HDD pretest functionality
 - Added critical bug test for float-to-integer conversion in adaptive chunk sizing
-- Increased test count from 29 to 34 tests
+- Increased test count from 34 to 40 tests
+- Added comprehensive mount checking test coverage (6 new tests)
 - All tests comply with 79-character line length limit
 
 ### Key Principles:
