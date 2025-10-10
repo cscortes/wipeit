@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-01-16
+
+### Added
+- **Comprehensive testing infrastructure** with 27 unit tests
+- **Test design documentation** (TESTDESIGN.md) with complete testing strategy
+- **GitHub Actions CI/CD pipeline** with 4 workflows:
+  - CI Pipeline for fast feedback
+  - Comprehensive Tests with quality checks
+  - Release Pipeline for automated publishing
+  - Status Monitoring for health checks
+- **Code quality tools**: linting, formatting, security scanning
+- **Issue and PR templates** for better project management
+- **Dependabot configuration** for automated dependency updates
+- **CI/CD documentation** (DOCS/CI-CD.md)
+- **Local CI testing script** (test-ci.sh)
+- **Status badges** in README for CI/CD visibility
+
+### Changed
+- Enhanced project documentation with development section
+- Improved README with CI/CD badges and contributing guidelines
+- Updated GitHub Actions workflows for better automation
+
+### Technical
+- **Test Coverage**: 82% overall coverage with comprehensive mocking
+- **Multi-Python Support**: Tests on Python 3.8, 3.9, 3.10, 3.11, 3.12
+- **Quality Gates**: Automated linting, formatting, and security checks
+- **Release Automation**: Tag-based PyPI publishing ready
+
 ## [0.1.0] - 2025-10-01
 
 ### Added
