@@ -8,6 +8,7 @@
     - if fail stop, alert user that tests failed!
     - else continue with next item on release check list.
 - bump symantic version
+    - make sure version is changed in all python files including test files
 - update all documentation, Changes, readme, testdesign, arch
 - create a branch tag with this new version
 - commit to git
