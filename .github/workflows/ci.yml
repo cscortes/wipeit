@@ -25,15 +25,14 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install coverage flake8 isort
+        pip install coverage[toml] flake8 isort
 
     - name: Run tests with make
       run: |
         make tests
 
-    - name: Run tests with coverage
+    - name: Generate coverage report
       run: |
-        coverage run test_wipeit.py
         coverage report --show-missing
 
     - name: Test help functionality
