@@ -64,11 +64,27 @@ This document outlines the comprehensive testing strategy for the wipeit secure 
   - Root privilege checking
   - Argument parsing validation
 
-#### 1.6 Integration Tests
+#### 1.6 HDD Pretest Tests
+- **`TestHDDPretest`** - HDD pretest functionality (Added in 0.3.1)
+  - `test_pretest_successful` - Verify HDD pretest runs and returns results
+  - `test_pretest_adaptive_algorithm` - Test adaptive algorithm recommendation
+  - `test_pretest_small_chunk_algorithm` - Test small chunk algorithm recommendation
+  - Pretest output and analysis validation
+  - Speed measurement and variance calculation
+
+#### 1.7 Wipe Device Integration Tests
+- **`TestWipeDeviceIntegration`** - Wipe device with pretest (Added in 0.3.1)
+  - `test_wipe_device_with_adaptive_chunk` - **CRITICAL BUG TEST**: Validates float-to-int conversion
+  - `test_adaptive_chunk_sizing_calculations` - Verifies adaptive chunk sizing produces integers
+  - Integration of pretest results with wipe device function
+  - Adaptive chunk algorithm correctness validation
+
+#### 1.8 Integration Tests
 - **`TestIntegration`** - End-to-end workflows
   - Complete progress save/load/clear workflow
   - Size parsing with various inputs
   - Cross-function interaction testing
+  - Estimated finish time formatting and milestone tracking
 
 ### 2. Integration Tests
 
@@ -467,9 +483,35 @@ jobs:
       run: coverage run test_wipeit.py && coverage report
 ```
 
+## Test Statistics
+
+### Current Test Coverage (v0.3.1)
+- **Total Test Classes**: 8
+- **Total Test Cases**: 34
+- **Test Coverage Breakdown**:
+  - `TestParseSize`: 5 tests
+  - `TestProgressFileFunctions`: 7 tests
+  - `TestResumeFileFunctions`: 5 tests
+  - `TestDeviceInfoFunctions`: 2 tests
+  - `TestMainFunction`: 4 tests
+  - `TestIntegration`: 4 tests
+  - `TestHDDPretest`: 3 tests (Added in 0.3.1)
+  - `TestWipeDeviceIntegration`: 2 tests (Added in 0.3.1)
+
+### Code Coverage Goals
+- **Target**: 90%+ code coverage
+- **Critical Paths**: 100% coverage for HDD pretest and adaptive chunk algorithms
+- **Current Status**: All 34 tests passing with 0 linting errors
+
 ## Conclusion
 
 This test design document provides comprehensive coverage for all wipeit features. It should be updated whenever new features are added to ensure complete test coverage and maintainability.
+
+### Recent Updates (v0.3.1)
+- Added comprehensive test coverage for HDD pretest functionality
+- Added critical bug test for float-to-integer conversion in adaptive chunk sizing
+- Increased test count from 29 to 34 tests
+- All tests comply with 79-character line length limit
 
 ### Key Principles:
 1. **Comprehensive Coverage:** Test all features and edge cases

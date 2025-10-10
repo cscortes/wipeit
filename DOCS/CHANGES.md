@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-10-10
+
+### Added
+- **Comprehensive test coverage for HDD pretest and adaptive chunk functionality**:
+  - New `TestHDDPretest` class with 3 test cases covering pretest scenarios
+  - New `TestWipeDeviceIntegration` class with 2 test cases for adaptive chunk algorithm
+  - Total test count increased from 29 to 34 tests
+  - **CRITICAL BUG TEST**: Explicit test for float-to-integer conversion in adaptive chunk sizing
+
+### Fixed
+- **Critical bug**: Float-to-integer conversion error in adaptive chunk sizing
+  - Fixed `TypeError: 'float' object cannot be interpreted as an integer` in `wipe_device()`
+  - Added explicit `int()` casting for `current_chunk_size` calculations
+  - Bug would have been caught by new comprehensive test coverage
+- **Line length violations** in new test cases (79-character limit compliance)
+
+### Changed
+- Test coverage now includes all critical code paths for HDD pretest feature
+- Enhanced test mocking for realistic HDD pretest simulation
+- Improved error messages in test assertions
+
 ## [0.3.0] - 2025-01-16
 
 ### Added

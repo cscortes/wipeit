@@ -376,7 +376,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 0.3.0', output)
+        self.assertIn('wipeit 0.3.1', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -621,7 +621,7 @@ class TestWipeDeviceIntegration(unittest.TestCase):
     @patch('time.time')
     def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_urandom,
                                              mock_file, mock_size):
-        """Test wipe_device with adaptive chunk algorithm - CRITICAL BUG TEST."""
+        """Test wipe_device with adaptive chunk - CRITICAL BUG TEST."""
         # Mock device size
         mock_size.return_value = 100 * 1024 * 1024  # 100MB for quick test
 
@@ -629,11 +629,11 @@ class TestWipeDeviceIntegration(unittest.TestCase):
         mock_urandom.return_value = b'test_data' * 1000
 
         # Mock time for pretest and wiping
-        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,  # Pretest times
-                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,  # Wipe start
-                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,  # Progress saves
-                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,  # More progress
-                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]  # Final progress
+        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,
+                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,
+                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,
+                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,
+                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]
 
         # Mock file operations
         mock_file.return_value.__enter__.return_value.seek = MagicMock()
@@ -665,12 +665,15 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                         with patch('builtins.input', return_value='y'):
                             # This should NOT raise the 'float' object error
                             try:
-                                wipeit.wipe_device('/dev/sdb', 10 * 1024 * 1024,
+                                wipeit.wipe_device('/dev/sdb',
+                                                   10 * 1024 * 1024,
                                                    skip_pretest=False)
                             except TypeError as e:
-                                if "'float' object cannot be interpreted as an integer" in str(e):
-                                    self.fail(
-                                        "CRITICAL BUG: float to int conversion error occurred")
+                                err_str = ("'float' object cannot be "
+                                           "interpreted as an integer")
+                                if err_str in str(e):
+                                    self.fail("CRITICAL BUG: float to int "
+                                              "conversion error occurred")
                                 else:
                                     raise
 
@@ -688,11 +691,11 @@ class TestWipeDeviceIntegration(unittest.TestCase):
         mock_urandom.return_value = b'test_data' * 1000
 
         # Mock time - provide enough values for the entire test
-        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,  # Pretest
-                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,  # Wipe start
-                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,  # Progress saves
-                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,  # More progress
-                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]  # Final progress
+        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,
+                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,
+                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,
+                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,
+                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]
 
         # Mock file operations
         mock_file.return_value.__enter__.return_value.seek = MagicMock()
@@ -726,7 +729,8 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                         with patch('os.urandom', side_effect=mock_urandom):
                             # Mock user input to proceed with wipe
                             with patch('builtins.input', return_value='y'):
-                                wipeit.wipe_device('/dev/sdb', 10 * 1024 * 1024,
+                                wipeit.wipe_device('/dev/sdb',
+                                                   10 * 1024 * 1024,
                                                    skip_pretest=False)
 
                         # Verify we made urandom calls with integers
