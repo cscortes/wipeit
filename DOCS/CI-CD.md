@@ -1,6 +1,10 @@
 # Continuous Integration and Deployment (CI/CD)
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
 This document describes the CI/CD pipeline for the wipeit project using GitHub Actions.
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
 ## Overview
 

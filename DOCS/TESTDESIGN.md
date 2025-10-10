@@ -1,8 +1,12 @@
 # Test Design Document - wipeit
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
 ## Overview
 
 This document outlines the comprehensive testing strategy for the wipeit secure device wiping utility. It covers all features, test categories, and should be updated whenever new features are added.
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
 ## Table of Contents
 

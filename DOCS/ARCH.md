@@ -1,8 +1,12 @@
 # Architecture Documentation
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
 ## Function Structure and Call Relationships
 
 This document provides an overview of the wipeit codebase architecture, showing the function structure and call relationships.
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
 ### Function Call Graph
 

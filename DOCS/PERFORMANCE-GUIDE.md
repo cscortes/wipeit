@@ -1,6 +1,10 @@
 # Performance Quick Reference Guide
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
 ## Buffer Size Cheat Sheet
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
 ### By Device Type
 

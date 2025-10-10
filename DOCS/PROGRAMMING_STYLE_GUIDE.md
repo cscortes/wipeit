@@ -1,5 +1,9 @@
 # Programming Style
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
+
 - All python programs must have a hard length of 79 characters per line.
 - All python doc strings must also have a hard length of 79 characters per line.
 - keep routines small, by breaking up larger routines into logical/

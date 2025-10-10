@@ -7,6 +7,10 @@
 
 A secure device wiping utility that overwrites block devices with random data.
 
+**🚨 CRITICAL WARNING: This tool is EXTREMELY DESTRUCTIVE and COMPLETELY IRREVERSIBLE! 🚨**
+
+**⚠️ USE AT YOUR OWN RISK - ALL DATA WILL BE PERMANENTLY DESTROYED! ⚠️**
+
 ## Table of Contents
 
 - [Features](#features)
@@ -42,6 +46,8 @@ A secure device wiping utility that overwrites block devices with random data.
 
 ## Installation
 
+**⚠️ WARNING: Before installing, understand that this tool will PERMANENTLY DESTROY data! ⚠️**
+
 ### Using uv (recommended)
 
 ```bash
@@ -71,9 +77,13 @@ source .venv/bin/activate
 
 ## Usage
 
+**🚨 EXTREME CAUTION: This section shows how to PERMANENTLY DESTROY data! 🚨**
+
 ### Quick Start
 
-**Important:** This tool requires root privileges. Always run with `sudo`.
+**⚠️ CRITICAL: This tool requires root privileges and will IRREVERSIBLY DESTROY data! ⚠️**
+
+**Always run with `sudo` and double-check device paths!**
 
 ### List all block devices
 
@@ -139,7 +149,11 @@ sdb  128G disk
 
 ### Wipe a specific device
 
+**🚨 DANGER: This will PERMANENTLY DESTROY ALL DATA on the specified device! 🚨**
+
 To securely wipe a device by overwriting it with random data:
+
+**⚠️ TRIPLE-CHECK the device path before proceeding! ⚠️**
 
 ```bash
 sudo wipeit /dev/sdx
@@ -468,6 +482,8 @@ These are typically pre-installed on most Linux distributions.
 - No patterns that could potentially be recovered
 
 ## Common Use Cases
+
+**⚠️ WARNING: All examples below will PERMANENTLY DESTROY data! ⚠️**
 
 ### 1. Prepare a USB drive for disposal
 ```bash
@@ -816,6 +832,8 @@ This project uses GitHub Actions for continuous integration:
 
 ### Contributing
 
+**⚠️ IMPORTANT: This tool is designed to DESTROY data - contribute responsibly! ⚠️**
+
 We welcome contributions from the community! There are many ways to participate:
 
 #### 🌟 **Show Your Support**
@@ -893,14 +911,28 @@ MIT License
 
 **We're here to help!** The wipeit community is friendly and responsive. Don't hesitate to reach out! 🤝
 
-## ⚠️  Final Warning
+## 🚨 FINAL WARNING - READ THIS CAREFULLY! 🚨
 
-**This tool is powerful and irreversible. Always:**
-- ✅ Verify the device path multiple times
-- ✅ Backup any data you want to keep
-- ✅ Unmount devices before wiping
-- ✅ Never wipe your system disk
-- ✅ Test on a disposable device first if unsure
+**THIS TOOL IS EXTREMELY DESTRUCTIVE AND COMPLETELY IRREVERSIBLE!**
+
+**⚠️ USE AT YOUR OWN RISK - ALL DATA WILL BE PERMANENTLY DESTROYED! ⚠️**
+
+**Before using this tool, you MUST:**
+- ✅ **TRIPLE-CHECK** the device path multiple times
+- ✅ **VERIFY** you're targeting the correct device (NOT your system disk!)
+- ✅ **BACKUP** any important data before proceeding
+- ✅ **UNMOUNT** devices before wiping
+- ✅ **NEVER** wipe your system disk or any device with important data
+- ✅ **TEST** on a disposable device first if you're unsure
+- ✅ **UNDERSTAND** that this process cannot be undone
+- ✅ **ACCEPT** full responsibility for any data loss
+
+**🚨 CRITICAL REMINDERS:**
+- This tool will **PERMANENTLY DESTROY** all data on the target device
+- There is **NO UNDO** function - once started, data is gone forever
+- **DOUBLE-CHECK** device paths - a typo could destroy the wrong drive
+- **NEVER** run this on your main system drive or any drive with important data
+- This tool is designed for **SECURE DATA DESTRUCTION** - use responsibly
 
 **By using this tool, you accept full responsibility for any data loss.**
 

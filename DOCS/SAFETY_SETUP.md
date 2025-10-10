@@ -1,6 +1,10 @@
 # Safety CLI Setup Guide
 
+**⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
+
 This document explains how to set up Safety CLI authentication for both local development and CI/CD.
+
+**🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
 ## Overview
 
