@@ -27,30 +27,30 @@ def get_device_info(device):
         info = {line.split('=')[0]: line.split('=')[1]
                 for line in lines if '=' in line}
         print("=" * 70)
-        print("📋 DEVICE INFORMATION")
+        print("DEVICE INFORMATION")
         print("=" * 70)
-        print(f"🔧 Device: {device}")
-        print(f"📏 Size: {int(size) / (1024**3):.2f} GB")
+        print(f"• Device: {device}")
+        print(f"• Size: {int(size) / (1024**3):.2f} GB")
         if 'ID_MODEL' in info:
-            print(f"🏷️  Model: {info['ID_MODEL']}")
+            print(f"• Model: {info['ID_MODEL']}")
         if 'ID_SERIAL_SHORT' in info:
-            print(f"🔢 Serial: {info['ID_SERIAL_SHORT']}")
+            print(f"• Serial: {info['ID_SERIAL_SHORT']}")
 
         disk_type, confidence, details = detect_disk_type(device)
-        print(f"💾 Type: {disk_type} (confidence: {confidence})")
+        print(f"• Type: {disk_type} (confidence: {confidence})")
         if details:
-            print(f"🔍 Detection details: {', '.join(details)}")
+            print(f"• Detection details: {', '.join(details)}")
 
         cmd = ['lsblk', '-o', 'NAME,SIZE,TYPE,MOUNTPOINTS', device]
         partitions = subprocess.check_output(cmd).decode()
-        print("📁 Device and partitions:")
+        print("• Device and partitions:")
         print(partitions)
         mount_output = subprocess.check_output(['mount']).decode()
         if device in mount_output:
-            print(f"⚠️  Warning: {device} or its partitions appear to be "
+            print(f"• Warning: {device} or its partitions appear to be "
                   f"mounted.")
         else:
-            print(f"✅ {device} does not appear to be mounted.")
+            print(f"• {device} does not appear to be mounted.")
     except Exception as e:
         print(f"Error getting info: {e}")
 
@@ -212,16 +212,16 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
     Returns dictionary with speed measurements and recommended algorithm.
     """
     print("=" * 70)
-    print("🔬 HDD PRETEST")
+    print("HDD PRETEST")
     print("=" * 70)
-    print("🔍 Performing HDD pretest to optimize wiping algorithm...")
-    print("   This will test write speeds at different disk positions.")
-    print("   ⚠️  WARNING: This will write test data to the disk!")
+    print("• Performing HDD pretest to optimize wiping algorithm...")
+    print("  This will test write speeds at different disk positions.")
+    print("  WARNING: This will write test data to the disk!")
 
     try:
         size = get_block_device_size(device)
-        print(f"   📏 Disk size: {size / (1024**3):.2f} GB")
-        print(f"   💾 Test chunk size: {chunk_size / (1024**2):.0f} MB")
+        print(f"  • Disk size: {size / (1024**3):.2f} GB")
+        print(f"  • Test chunk size: {chunk_size / (1024**2):.0f} MB")
 
         test_positions = [
             ("beginning", 0),
@@ -229,14 +229,14 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
             ("end", size - chunk_size)
         ]
 
-        print(f"   🎯 Test positions: {len(test_positions)} locations")
+        print(f"  • Test positions: {len(test_positions)} locations")
 
         results = {}
         test_data = os.urandom(chunk_size)
 
         with open(device, 'wb') as f:
             for position_name, position in test_positions:
-                print(f"  🔄 Testing {position_name} of disk...")
+                print(f"  • Testing {position_name} of disk...")
 
                 f.seek(position)
 
@@ -255,7 +255,7 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
                     'duration': duration
                 }
 
-                print(f"    ⚡ {position_name.capitalize()}: "
+                print(f"    • {position_name.capitalize()}: "
                       f"{speed_mbps:.2f} MB/s")
 
         speeds = [results[pos]['speed_mbps'] for pos in results]
@@ -282,17 +282,17 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
         }
 
         print("\n" + "=" * 70)
-        print("📊 PRETEST ANALYSIS")
+        print("PRETEST ANALYSIS")
         print("=" * 70)
-        print(f"  ⚡ Average speed: {avg_speed:.2f} MB/s")
-        print(f"  📈 Speed variance: {speed_variance:.2f} MB/s")
-        print(f"  🎯 Recommended algorithm: {algorithm}")
-        print(f"  💡 Reason: {reason}")
+        print(f"• Average speed: {avg_speed:.2f} MB/s")
+        print(f"• Speed variance: {speed_variance:.2f} MB/s")
+        print(f"• Recommended algorithm: {algorithm}")
+        print(f"• Reason: {reason}")
 
         return results
 
     except Exception as e:
-        print(f"⚠️  Pretest failed: {e}")
+        print(f"• Pretest failed: {e}")
         print("   Error details:", str(e))
         print("   Falling back to standard algorithm")
         return None
@@ -502,9 +502,9 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
         signal.signal(signal.SIGINT, signal_handler)
 
         print("\n" + "=" * 70)
-        print("🔄 WIPING PROCESS")
+        print("WIPING PROCESS")
         print("=" * 70)
-        print("Starting secure wipe with random data...")
+        print("• Starting secure wipe with random data...")
 
         with open(device, 'wb') as f:
             if written > 0:
@@ -562,11 +562,11 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                 bar = "█" * filled_length + "░" * (bar_length - filled_length)
                 # Format the progress line with better visual structure
                 progress_line = (
-                    f"\r🔄 [{bar}] {progress_percent:.1f}% "
-                    f"│ 📊 {written / (1024**3):.2f} GB "
-                    f"│ ⚡ {speed:.1f} MB/s "
-                    f"│ ⏱️  {eta / 60:.1f} min "
-                    f"│ 💾 {current_chunk_size / (1024**2):.0f}M"
+                    f"\r• [{bar}] {progress_percent:.1f}% "
+                    f"│ {written / (1024**3):.2f} GB "
+                    f"│ {speed:.1f} MB/s "
+                    f"│ {eta / 60:.1f} min "
+                    f"│ {current_chunk_size / (1024**2):.0f}M"
                     f"{algorithm_info}")
 
                 if (current_milestone > last_milestone and
@@ -575,27 +575,27 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                     finish_time_str = time.strftime(
                         "%I:%M %p", time.localtime(estimated_finish))
                     progress_line += (
-                        f" │ 🕐 {finish_time_str}")
+                        f" │ {finish_time_str}")
                     last_milestone = current_milestone
 
                 print(progress_line, end="", flush=True)
 
         clear_progress(device)
         print("\n\n" + "=" * 70)
-        print("🎉 WIPE COMPLETED")
+        print("WIPE COMPLETED")
         print("=" * 70)
-        print("✅ Wipe completed successfully!")
-        print(f"📊 Total written: {written / (1024**3):.2f} GB")
-        print("🔒 Device has been securely wiped with random data")
+        print("• Wipe completed successfully!")
+        print(f"• Total written: {written / (1024**3):.2f} GB")
+        print("• Device has been securely wiped with random data")
 
     except KeyboardInterrupt:
         print("\n\n" + "=" * 70)
-        print("⏸️  WIPE INTERRUPTED")
+        print("WIPE INTERRUPTED")
         print("=" * 70)
-        print(f"⏸️  Wipe interrupted at {written / (1024**3):.2f} GB "
+        print(f"• Wipe interrupted at {written / (1024**3):.2f} GB "
               f"({written / size * 100:.2f}% complete)")
         save_progress(device, written, size, chunk_size, pretest_results)
-        print("💾 Progress saved. To resume, run:")
+        print("• Progress saved. To resume, run:")
         print(f"  sudo ./wipeit.py --resume {device}")
     except Exception as e:
         print(f"Error wiping: {e}")
@@ -657,9 +657,9 @@ Disk type detection and HDD pretest:
         try:
             chunk_size = parse_size(args.buffer_size)
             print("=" * 70)
-            print("⚙️  CONFIGURATION")
+            print("CONFIGURATION")
             print("=" * 70)
-            print(f"💾 Using buffer size: {chunk_size / (1024**2):.0f} MB "
+            print(f"• Using buffer size: {chunk_size / (1024**2):.0f} MB "
                   f"({chunk_size / (1024**3):.2f} GB)")
         except ValueError as e:
             print(f"Error: {e}")
