@@ -1,5 +1,10 @@
 # wipeit
 
+[![CI](https://github.com/lcortes/wipeit/actions/workflows/ci.yml/badge.svg)](https://github.com/lcortes/wipeit/actions/workflows/ci.yml)
+[![Tests](https://github.com/lcortes/wipeit/actions/workflows/tests.yml/badge.svg)](https://github.com/lcortes/wipeit/actions/workflows/tests.yml)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A secure device wiping utility that overwrites block devices with random data.
 
 ## Table of Contents
@@ -307,9 +312,10 @@ These are typically pre-installed on most Linux distributions.
 
 ### During Wiping
 - ✅ **Progress tracking:** Real-time feedback on operation status
-- ✅ **Interruptible:** Can be stopped at any time with Ctrl+C
+- ✅ **Interruptible:** Can be stopped at any time with Ctrl+C (immediate response)
 - ✅ **Resumable:** Automatically saves progress and allows resuming from interruption point
 - ✅ **Memory efficient:** Uses 100 MB chunks to avoid excessive memory usage
+- ✅ **Immediate writes:** Each chunk is flushed and synced to storage immediately
 
 ### Random Data
 - Uses `os.urandom()` for cryptographically secure random data
@@ -599,11 +605,49 @@ Real-world test results (256 GB NVMe SSD):
 
 **Conclusion:** For most use cases, 100M-500M provides the best balance of speed and resource usage.
 
+## Development
+
+### Running Tests
+
+```bash
+# Run all tests
+python3 test_wipeit.py
+
+# Run with verbose output
+python3 test_wipeit.py -v
+
+# Run specific test class
+python3 -m unittest test_wipeit.TestParseSize -v
+
+# Run with coverage
+coverage run test_wipeit.py
+coverage report
+```
+
+### Continuous Integration
+
+This project uses GitHub Actions for continuous integration:
+
+- **CI Pipeline**: Runs tests on Python 3.8, 3.11, 3.12
+- **Test Suite**: Comprehensive unit tests with 27 test cases
+- **Code Quality**: Linting, formatting, and security checks
+- **Coverage**: Code coverage reporting
+- **Build**: Automatic package building and validation
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Add tests for new functionality
+4. Ensure all tests pass
+5. Submit a pull request
+
 ## Documentation
 
 For more information, see the [DOCS](DOCS/) directory:
 - [CHANGES.md](DOCS/CHANGES.md) - Version history and changelog
 - [PERFORMANCE-GUIDE.md](DOCS/PERFORMANCE-GUIDE.md) - Quick reference for performance optimization
+- [TESTDESIGN.md](TESTDESIGN.md) - Comprehensive testing strategy and guidelines
 
 ## License
 
