@@ -7,5 +7,5 @@ reusable functions.
 - recommend new classes based on functionality,
 to dev in the TODO.md as a low priority item.
 - Use only doc strings in functions, not inline comments.
-- make sure we have code coverage for all code.
-
+- make sure we have unittest code coverage for all code.
+- make sure all dependencies for release and debug are being updated in pyproject.toml

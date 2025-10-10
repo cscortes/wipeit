@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-10
+
+### Added
+- **Enhanced output formatting with section headings and bullet points**:
+  - Clear section headings with visual separators for all major sections
+  - Professional bullet point formatting throughout the output
+  - Improved visual hierarchy and readability
+  - Better organization of device information, configuration, pretest, and progress sections
+
+### Changed
+- **Output format improvements**:
+  - Replaced emoji icons with clean bullet points (•) for professional appearance
+  - Added section headings: DEVICE INFORMATION, CONFIGURATION, HDD PRETEST, PRETEST ANALYSIS, WIPING PROCESS, WIPE COMPLETED, WIPE INTERRUPTED
+  - Enhanced progress bar display with better visual indicators
+  - Improved completion and interruption messages with clear formatting
+  - Maintained all functionality while significantly improving user experience
+
+### Fixed
+- **Test compatibility**: Updated test assertions to match new section heading format
+- **Code formatting**: Ensured all new formatting code complies with programming style guide
+
 ## [0.3.1] - 2025-10-10
 
 ### Added
