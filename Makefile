@@ -107,7 +107,7 @@ security:
 	@echo ""
 	@echo "=== Running Safety Dependency Check ==="
 	@echo "Checking for known security vulnerabilities in dependencies..."
-	@python3 -m safety check || echo "⚠️  Safety found issues (see output above)"
+	@python3 -m safety scan || echo "⚠️  Safety found issues (see output above)"
 	@echo ""
 	@echo "✅ Security scans completed"
 	@echo "💡 Note: Low severity issues in system tools are expected"

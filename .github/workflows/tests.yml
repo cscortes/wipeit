@@ -94,10 +94,10 @@ jobs:
         bandit -r . -c bandit.yaml -f json -o bandit-report.json || true
         bandit -r . -c bandit.yaml -f txt
 
-    - name: Run safety check
+    - name: Run safety scan
       run: |
-        safety check --json --output safety-report.json || true
-        safety check
+        safety --key ${{ secrets.SAFETY_API_KEY }} scan --save-as json safety-report.json || true
+        safety --key ${{ secrets.SAFETY_API_KEY }} scan
 
   build:
     runs-on: ubuntu-latest

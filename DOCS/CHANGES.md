@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `TestWipeDeviceIntegration` class with 2 test cases for adaptive chunk algorithm
   - Total test count increased from 29 to 34 tests
   - **CRITICAL BUG TEST**: Explicit test for float-to-integer conversion in adaptive chunk sizing
+- **Security scanning improvements**:
+  - Migration to Safety CLI 3.x with `safety scan` command (replaces deprecated `safety check`)
+  - New `make security` command for running bandit and safety security scans
+  - Bandit configuration file (`bandit.yaml`) to suppress expected issues in system tools
+  - Safety CLI setup documentation (`DOCS/SAFETY_SETUP.md`) with authentication guide
 
 ### Fixed
 - **Critical bug**: Float-to-integer conversion error in adaptive chunk sizing
