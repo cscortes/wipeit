@@ -96,8 +96,14 @@ jobs:
 
     - name: Run safety scan
       run: |
-        safety --key ${{ secrets.SAFETY_API_KEY }} scan --save-as json safety-report.json || true
-        safety --key ${{ secrets.SAFETY_API_KEY }} scan
+        if [ -n "${{ secrets.SAFETY_API_KEY }}" ]; then
+          safety --key ${{ secrets.SAFETY_API_KEY }} scan --save-as json safety-report.json || true
+          safety --key ${{ secrets.SAFETY_API_KEY }} scan
+        else
+          echo "⚠️  SAFETY_API_KEY secret not set - skipping safety scan"
+          echo "To enable safety scanning, add SAFETY_API_KEY secret to repository settings"
+          echo "See DOCS/SAFETY_SETUP.md for setup instructions"
+        fi
 
   build:
     runs-on: ubuntu-latest

@@ -32,21 +32,24 @@ safety scan
 
 ## CI/CD Setup (GitHub Actions)
 
+**⚠️ IMPORTANT**: The GitHub Actions workflow will fail without the `SAFETY_API_KEY` secret. Follow these steps to set it up:
+
 ### 1. Get Your API Key
 1. Go to https://platform.safetycli.com
-2. Sign up or log in to your account
+2. Sign up or log in to your account (free account available)
 3. Navigate to your profile/settings
 4. Generate an API key
 
 ### 2. Add API Key to GitHub Secrets
 1. Go to your GitHub repository
-2. Navigate to Settings → Secrets and variables → Actions
-3. Click "New repository secret"
-4. Name: `SAFETY_API_KEY`
-5. Value: Your API key from step 1
+2. Navigate to **Settings** → **Secrets and variables** → **Actions**
+3. Click **"New repository secret"**
+4. **Name**: `SAFETY_API_KEY`
+5. **Value**: Your API key from step 1
+6. Click **"Add secret"**
 
 ### 3. Verify CI/CD Setup
-The GitHub Actions workflow will automatically use the API key from the secret.
+The GitHub Actions workflow will automatically use the API key from the secret. If the secret is not set, the workflow will skip the safety scan and show a warning message.
 
 ## Migration Notes
 
@@ -80,6 +83,15 @@ pip install -U safety
 # or with uv
 uv add --dev safety
 ```
+
+#### "Missing command" or "No such option" Error in CI/CD
+This usually means the `SAFETY_API_KEY` secret is not set or is empty:
+1. Check that `SAFETY_API_KEY` secret exists in GitHub repository settings
+2. Verify the secret value is not empty
+3. Ensure the secret name is exactly `SAFETY_API_KEY` (case-sensitive)
+
+#### "SAFETY_API_KEY secret not set" Warning
+This is expected if you haven't set up the API key yet. The workflow will continue without failing, but safety scanning will be skipped.
 
 ## Commands Reference
 
