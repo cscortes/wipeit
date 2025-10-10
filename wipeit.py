@@ -26,26 +26,28 @@ def get_device_info(device):
         lines = model.splitlines()
         info = {line.split('=')[0]: line.split('=')[1]
                 for line in lines if '=' in line}
-        print(f"Device: {device}")
-        print(f"Size: {int(size) / (1024**3):.2f} GB")
+        print(f"🔧 Device: {device}")
+        print(f"📏 Size: {int(size) / (1024**3):.2f} GB")
         if 'ID_MODEL' in info:
-            print(f"Model: {info['ID_MODEL']}")
+            print(f"🏷️  Model: {info['ID_MODEL']}")
         if 'ID_SERIAL_SHORT' in info:
-            print(f"Serial: {info['ID_SERIAL_SHORT']}")
+            print(f"🔢 Serial: {info['ID_SERIAL_SHORT']}")
 
         disk_type, confidence, details = detect_disk_type(device)
-        print(f"Type: {disk_type} (confidence: {confidence})")
+        print(f"💾 Type: {disk_type} (confidence: {confidence})")
         if details:
-            print(f"Detection details: {', '.join(details)}")
+            print(f"🔍 Detection details: {', '.join(details)}")
 
         cmd = ['lsblk', '-o', 'NAME,SIZE,TYPE,MOUNTPOINTS', device]
         partitions = subprocess.check_output(cmd).decode()
-        print("Device and partitions:\n" + partitions)
+        print("📁 Device and partitions:")
+        print(partitions)
         mount_output = subprocess.check_output(['mount']).decode()
         if device in mount_output:
-            print(f"Warning: {device} or its partitions appear to be mounted.")
+            print(f"⚠️  Warning: {device} or its partitions appear to be "
+                  f"mounted.")
         else:
-            print(f"{device} does not appear to be mounted.")
+            print(f"✅ {device} does not appear to be mounted.")
     except Exception as e:
         print(f"Error getting info: {e}")
 
@@ -212,8 +214,8 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
 
     try:
         size = get_block_device_size(device)
-        print(f"   Disk size: {size / (1024**3):.2f} GB")
-        print(f"   Test chunk size: {chunk_size / (1024**2):.0f} MB")
+        print(f"   📏 Disk size: {size / (1024**3):.2f} GB")
+        print(f"   💾 Test chunk size: {chunk_size / (1024**2):.0f} MB")
 
         test_positions = [
             ("beginning", 0),
@@ -221,14 +223,14 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
             ("end", size - chunk_size)
         ]
 
-        print(f"   Test positions: {len(test_positions)} locations")
+        print(f"   🎯 Test positions: {len(test_positions)} locations")
 
         results = {}
         test_data = os.urandom(chunk_size)
 
         with open(device, 'wb') as f:
             for position_name, position in test_positions:
-                print(f"  Testing {position_name} of disk...")
+                print(f"  🔄 Testing {position_name} of disk...")
 
                 f.seek(position)
 
@@ -247,7 +249,7 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
                     'duration': duration
                 }
 
-                print(f"    {position_name.capitalize()}: "
+                print(f"    ⚡ {position_name.capitalize()}: "
                       f"{speed_mbps:.2f} MB/s")
 
         speeds = [results[pos]['speed_mbps'] for pos in results]
@@ -274,10 +276,10 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
         }
 
         print("\n📊 Pretest Analysis:")
-        print(f"  Average speed: {avg_speed:.2f} MB/s")
-        print(f"  Speed variance: {speed_variance:.2f} MB/s")
-        print(f"  Recommended algorithm: {algorithm}")
-        print(f"  Reason: {reason}")
+        print(f"  ⚡ Average speed: {avg_speed:.2f} MB/s")
+        print(f"  📈 Speed variance: {speed_variance:.2f} MB/s")
+        print(f"  🎯 Recommended algorithm: {algorithm}")
+        print(f"  💡 Reason: {reason}")
 
         return results
 
@@ -541,12 +543,17 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                     elif algo == "small_chunk":
                         algorithm_info = " | Algorithm: Small Chunk"
 
+                # Create a visual progress bar
+                bar_length = 40
+                filled_length = int(bar_length * progress_percent / 100)
+                bar = "█" * filled_length + "░" * (bar_length - filled_length)
+                # Format the progress line with better visual structure
                 progress_line = (
-                    f"Progress: {progress_percent:.2f}% "
-                    f"| Written: {written / (1024**3):.2f} GB | "
-                    f"Speed: {speed:.2f} MB/s | "
-                    f"ETA: {eta / 60:.2f} min | "
-                    f"Buffer: {current_chunk_size / (1024**2):.0f}M"
+                    f"\r🔄 [{bar}] {progress_percent:.1f}% "
+                    f"│ 📊 {written / (1024**3):.2f} GB "
+                    f"│ ⚡ {speed:.1f} MB/s "
+                    f"│ ⏱️  {eta / 60:.1f} min "
+                    f"│ 💾 {current_chunk_size / (1024**2):.0f}M"
                     f"{algorithm_info}")
 
                 if (current_milestone > last_milestone and
@@ -555,20 +562,21 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                     finish_time_str = time.strftime(
                         "%I:%M %p", time.localtime(estimated_finish))
                     progress_line += (
-                        f" | Estimated Finish Time: {finish_time_str}")
+                        f" │ 🕐 {finish_time_str}")
                     last_milestone = current_milestone
 
-                print(progress_line)
+                print(progress_line, end="", flush=True)
 
         clear_progress(device)
-        print("\n✅ Wipe completed successfully!")
-        print(f"Total written: {written / (1024**3):.2f} GB")
+        print("\n\n🎉 Wipe completed successfully!")
+        print(f"📊 Total written: {written / (1024**3):.2f} GB")
+        print("🔒 Device has been securely wiped with random data")
 
     except KeyboardInterrupt:
-        print(f"\nWipe interrupted at {written / (1024**3):.2f} GB "
+        print(f"\n\n⏸️  Wipe interrupted at {written / (1024**3):.2f} GB "
               f"({written / size * 100:.2f}% complete)")
         save_progress(device, written, size, chunk_size, pretest_results)
-        print("Progress saved. To resume, run:")
+        print("💾 Progress saved. To resume, run:")
         print(f"  sudo ./wipeit.py --resume {device}")
     except Exception as e:
         print(f"Error wiping: {e}")
@@ -629,7 +637,7 @@ Disk type detection and HDD pretest:
             sys.exit(1)
         try:
             chunk_size = parse_size(args.buffer_size)
-            print(f"Using buffer size: {chunk_size / (1024**2):.0f} MB "
+            print(f"💾 Using buffer size: {chunk_size / (1024**2):.0f} MB "
                   f"({chunk_size / (1024**3):.2f} GB)")
         except ValueError as e:
             print(f"Error: {e}")
