@@ -6,7 +6,7 @@ This document describes the CI/CD pipeline for the wipeit project using GitHub A
 
 The wipeit project uses GitHub Actions for:
 - **Continuous Integration**: Automated testing on every push and pull request
-- **Code Quality**: Linting, formatting, and security checks
+- **Code Quality**: Linting and security checks
 - **Release Management**: Automated package building and publishing
 - **Status Monitoring**: Weekly health checks and reporting
 
@@ -35,7 +35,7 @@ The wipeit project uses GitHub Actions for:
 **Features**:
 - Tests on Python 3.8, 3.9, 3.10, 3.11, 3.12
 - Unit tests with coverage
-- Code formatting (black, isort)
+- Import sorting checks (isort)
 - Linting (flake8)
 - Security scanning (bandit, safety)
 - Package building and validation
@@ -105,7 +105,7 @@ coverage report
 - [ ] Coverage above 80%
 - [ ] No linting errors
 - [ ] No security vulnerabilities
-- [ ] Code formatting compliance
+- [ ] Import sorting compliance
 
 ### Optional Checks
 - [ ] Performance benchmarks
@@ -122,6 +122,18 @@ coverage report
 # Run specific test categories
 python3 test_wipeit.py TestParseSize -v
 python3 test_wipeit.py TestProgressFileFunctions -v
+```
+
+### Code Formatting (Local Only)
+```bash
+# Fix line length issues before committing
+make pre-git-prep
+
+# Run linting checks
+make lint
+
+# Run security scans
+make security
 ```
 
 ### Manual Testing
@@ -161,7 +173,6 @@ python3 -c "from wipeit import parse_size; print(parse_size('1G'))"
 ### Python Dependencies
 - `coverage`: Test coverage
 - `flake8`: Linting
-- `black`: Code formatting
 - `isort`: Import sorting
 - `bandit`: Security scanning
 - `safety`: Dependency scanning
@@ -206,7 +217,7 @@ chmod +x test-ci.sh
 ```bash
 # Update dependencies
 pip3 install --upgrade pip
-pip3 install coverage flake8 black isort bandit safety
+pip3 install coverage flake8 isort bandit safety
 ```
 
 ### Debug Mode
@@ -266,8 +277,8 @@ python3 -u test_wipeit.py -v 2>&1 | tee test-output.log
 
 ### Tools
 - [Bandit Security Scanner](https://bandit.readthedocs.io/)
-- [Black Code Formatter](https://black.readthedocs.io/)
 - [Flake8 Linter](https://flake8.pycqa.org/)
+- [isort Import Sorter](https://pycqa.github.io/isort/)
 
 ### Support
 - GitHub Issues for bug reports
