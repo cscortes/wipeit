@@ -4,7 +4,7 @@ wipeit - Secure device wiping utility
 Overwrites block devices with random data for secure data destruction.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import argparse
 import fcntl
@@ -15,6 +15,36 @@ import struct
 import subprocess
 import sys
 import time
+
+
+def check_device_mounted(device):
+    """
+    Check if device or any of its partitions are mounted.
+    Returns (is_mounted, mount_info) where mount_info contains details.
+    """
+    try:
+        # Check if the device itself is mounted
+        mount_output = subprocess.check_output(['mount']).decode()
+        device_mounted = device in mount_output
+
+        # Get detailed mount information using lsblk
+        cmd = ['lsblk', '-o', 'NAME,MOUNTPOINT', device, '-n']
+        lsblk_output = subprocess.check_output(cmd).decode()
+
+        mounted_partitions = []
+        for line in lsblk_output.strip().split('\n'):
+            if line.strip():
+                parts = line.split()
+                if len(parts) >= 2 and parts[1] and parts[1] != '-':
+                    mounted_partitions.append(f"/dev/{parts[0]} -> {parts[1]}")
+
+        is_mounted = device_mounted or len(mounted_partitions) > 0
+        mount_info = mounted_partitions if mounted_partitions else []
+
+        return is_mounted, mount_info
+    except Exception as e:
+        print(f"Error checking mount status: {e}")
+        return False, []
 
 
 def get_device_info(device):
@@ -43,14 +73,19 @@ def get_device_info(device):
 
         cmd = ['lsblk', '-o', 'NAME,SIZE,TYPE,MOUNTPOINTS', device]
         partitions = subprocess.check_output(cmd).decode()
-        print("• Device and partitions:")
+        print("📁 Device and partitions:")
         print(partitions)
-        mount_output = subprocess.check_output(['mount']).decode()
-        if device in mount_output:
-            print(f"• Warning: {device} or its partitions appear to be "
-                  f"mounted.")
+
+        # Check mount status
+        is_mounted, mount_info = check_device_mounted(device)
+        if is_mounted:
+            print(f"⚠️  WARNING: {device} or its partitions are mounted!")
+            if mount_info:
+                print("📌 Mounted partitions:")
+                for mount in mount_info:
+                    print(f"   • {mount}")
         else:
-            print(f"• {device} does not appear to be mounted.")
+            print(f"✅ {device} is not mounted - safe to proceed")
     except Exception as e:
         print(f"Error getting info: {e}")
 
@@ -666,6 +701,39 @@ Disk type detection and HDD pretest:
             sys.exit(1)
 
         get_device_info(args.device)
+
+        # Safety check: Ensure device is not mounted
+        is_mounted, mount_info = check_device_mounted(args.device)
+        if is_mounted:
+            print("\n" + "=" * 70)
+            print("🚨 SAFETY CHECK FAILED - DEVICE IS MOUNTED")
+            print("=" * 70)
+            print(f"❌ Cannot proceed with wiping {args.device}")
+            print("   The device or its partitions are currently mounted!")
+            print()
+            if mount_info:
+                print("📌 Mounted partitions found:")
+                for mount in mount_info:
+                    print(f"   • {mount}")
+                print()
+            print("🔧 TO FIX THIS ISSUE:")
+            print("   1. Unmount all partitions on this device:")
+            print(f"      sudo umount /dev/{args.device.split('/')[-1]}*")
+            print("   2. Or unmount specific partitions:")
+            for mount in mount_info:
+                partition = mount.split(' -> ')[0]
+                print(f"      sudo umount {partition}")
+            print("   3. Verify device is unmounted:")
+            print(f"      lsblk {args.device}")
+            print("   4. Then run wipeit again")
+            print()
+            print("⚠️  WARNING: Wiping a mounted device can cause:")
+            print("   • Data corruption on the mounted filesystem")
+            print("   • System instability or crashes")
+            print("   • Loss of data on other mounted partitions")
+            print()
+            print("🛑 Program terminated for safety.")
+            sys.exit(1)
 
         if not args.resume:
             progress_data = load_progress(args.device)

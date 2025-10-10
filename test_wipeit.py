@@ -5,6 +5,7 @@ Unit tests for wipeit - Secure device wiping utility
 
 import json
 import os
+import subprocess
 import sys
 import time
 import unittest
@@ -376,7 +377,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.0.0', output)
+        self.assertIn('wipeit 1.1.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -739,6 +740,143 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                             self.assertIsInstance(size, int)
 
 
+class TestMountChecking(unittest.TestCase):
+    """Test mount checking functionality."""
+
+    @patch('wipeit.subprocess.check_output')
+    def test_check_device_mounted_not_mounted(self, mock_check_output):
+        """Test check_device_mounted when device is not mounted."""
+        # Mock mount command output (device not in mount list)
+        mock_check_output.side_effect = [
+            # mount output
+            b'/dev/sda1 on / type ext4 (rw,relatime)\n'
+            b'/dev/sda2 on /home type ext4 (rw,relatime)\n',
+            b'sdb\nsdb1\n'  # lsblk output (no mountpoints)
+        ]
+
+        is_mounted, mount_info = wipeit.check_device_mounted('/dev/sdb')
+
+        self.assertFalse(is_mounted)
+        self.assertEqual(mount_info, [])
+        self.assertEqual(mock_check_output.call_count, 2)
+
+    @patch('wipeit.subprocess.check_output')
+    def test_check_device_mounted_device_mounted(self, mock_check_output):
+        """Test check_device_mounted when device itself is mounted."""
+        # Mock mount command output (device in mount list)
+        mock_check_output.side_effect = [
+            b'/dev/sdb on /mnt/usb type ext4 (rw,relatime)\n',  # mount output
+            b'sdb\nsdb1\n'  # lsblk output
+        ]
+
+        is_mounted, mount_info = wipeit.check_device_mounted('/dev/sdb')
+
+        self.assertTrue(is_mounted)
+        self.assertEqual(mount_info, [])
+        self.assertEqual(mock_check_output.call_count, 2)
+
+    @patch('wipeit.subprocess.check_output')
+    def test_check_device_mounted_partitions_mounted(self, mock_check_output):
+        """Test check_device_mounted when partitions are mounted."""
+        # Mock mount command output (device not in mount list)
+        mock_check_output.side_effect = [
+            b'/dev/sda1 on / type ext4 (rw,relatime)\n',  # mount output
+            b'sdb\nsdb1 /mnt/usb\nsdb2 /media/data\n'  # lsblk with mountpoints
+        ]
+
+        is_mounted, mount_info = wipeit.check_device_mounted('/dev/sdb')
+
+        self.assertTrue(is_mounted)
+        self.assertEqual(len(mount_info), 2)
+        self.assertIn('/dev/sdb1 -> /mnt/usb', mount_info)
+        self.assertIn('/dev/sdb2 -> /media/data', mount_info)
+        self.assertEqual(mock_check_output.call_count, 2)
+
+    @patch('wipeit.subprocess.check_output')
+    def test_check_device_mounted_error_handling(self, mock_check_output):
+        """Test check_device_mounted error handling."""
+        # Mock subprocess to raise an exception
+        mock_check_output.side_effect = subprocess.CalledProcessError(
+            1, 'mount')
+
+        is_mounted, mount_info = wipeit.check_device_mounted('/dev/sdb')
+
+        self.assertFalse(is_mounted)
+        self.assertEqual(mount_info, [])
+
+    @patch('wipeit.check_device_mounted')
+    @patch('wipeit.get_device_info')
+    @patch('wipeit.load_progress')
+    def test_main_mount_safety_check_mounted(self, mock_load_progress,
+                                             mock_get_info,
+                                             mock_check_mounted):
+        """Test that main function exits when device is mounted."""
+        # Mock device is mounted
+        mock_check_mounted.return_value = (True, ['/dev/sdb1 -> /mnt/usb'])
+        # Mock no previous progress
+        mock_load_progress.return_value = None
+
+        # Mock argument parsing
+        with patch('wipeit.argparse.ArgumentParser.parse_args') as mock_parse:
+            mock_args = MagicMock()
+            mock_args.device = '/dev/sdb'
+            mock_args.buffer_size = '100M'
+            mock_args.resume = False
+            mock_args.skip_pretest = False
+            mock_parse.return_value = mock_args
+
+            # Mock root check
+            with patch('os.geteuid', return_value=0):
+                # Mock parse_size
+                with patch('wipeit.parse_size', return_value=100*1024*1024):
+                    # Mock stdout to capture output
+                    with patch('sys.stdout', new_callable=StringIO):
+                        # Test that SystemExit is raised (sys.exit behavior)
+                        with self.assertRaises(SystemExit) as cm:
+                            wipeit.main()
+                        # Verify exit code is 1
+                        self.assertEqual(cm.exception.code, 1)
+
+        # Verify that check_device_mounted was called
+        mock_check_mounted.assert_called_once_with('/dev/sdb')
+
+    @patch('wipeit.check_device_mounted')
+    @patch('wipeit.get_device_info')
+    @patch('sys.exit')
+    def test_main_mount_safety_check_not_mounted(self, mock_exit,
+                                                 mock_get_info,
+                                                 mock_check_mounted):
+        """Test that main function continues when device is not mounted."""
+        # Mock device is not mounted
+        mock_check_mounted.return_value = (False, [])
+
+        # Mock argument parsing
+        with patch('wipeit.argparse.ArgumentParser.parse_args') as mock_parse:
+            mock_args = MagicMock()
+            mock_args.device = '/dev/sdb'
+            mock_args.buffer_size = '100M'
+            mock_args.resume = False
+            mock_args.skip_pretest = False
+            mock_parse.return_value = mock_args
+
+            # Mock root check
+            with patch('os.geteuid', return_value=0):
+                # Mock parse_size
+                with patch('wipeit.parse_size', return_value=100*1024*1024):
+                    # Mock load_progress to return None (no previous progress)
+                    with patch('wipeit.load_progress', return_value=None):
+                        # Mock input to abort
+                        with patch('builtins.input', return_value='n'):
+                            wipeit.main()
+
+        # Verify that sys.exit was NOT called due to mount check
+        # (it might be called for other reasons like user abort)
+        mount_check_calls = [call for call in mock_exit.call_args_list
+                             if len(call[0]) > 0 and call[0][0] == 1]
+        self.assertEqual(len(mount_check_calls), 0)
+        mock_check_mounted.assert_called_once_with('/dev/sdb')
+
+
 if __name__ == '__main__':
     # Create a test suite
     test_suite = unittest.TestSuite()
@@ -753,6 +891,7 @@ if __name__ == '__main__':
         TestIntegration,
         TestHDDPretest,
         TestWipeDeviceIntegration,
+        TestMountChecking,
     ]
 
     for test_class in test_classes:

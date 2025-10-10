@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
+## [1.1.0] - 2025-01-27
+
+### Added
+- **🚨 CRITICAL SAFETY FEATURE: Mount Detection and Prevention**
+  - **Automatic mount checking**: Detects if target device or partitions are mounted
+  - **Immediate termination**: STOPS EXECUTION if mounted devices are detected
+  - **Detailed mount information**: Shows exactly which partitions are mounted and where
+  - **Clear unmount instructions**: Provides step-by-step commands to safely unmount devices
+  - **Comprehensive safety warnings**: Explains risks of wiping mounted devices
+  - **Prevents data corruption**: Protects against accidental loss of important data
+- **Enhanced mount checking tests**: 6 new test cases covering all mount detection scenarios
+- **Updated documentation**: Added comprehensive mount safety section to README
+
+### Changed
+- **Safety workflow**: Mount check now runs before any wiping operations
+- **Error handling**: Improved mount status detection with better error handling
+- **User experience**: Clear, actionable error messages when devices are mounted
+
+### Fixed
+- **Safety gap**: Previously only warned about mounted devices, now prevents execution
+- **Test coverage**: Added comprehensive testing for mount checking functionality
+
 ## [1.0.0] - 2025-01-27
 
 ### Added

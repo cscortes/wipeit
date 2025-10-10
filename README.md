@@ -429,7 +429,7 @@ wipeit -v
 **Example output:**
 ```bash
 $ wipeit --version
-wipeit 1.0.0
+wipeit 1.1.0
 ```
 
 ### Resume functionality
@@ -466,18 +466,59 @@ These are typically pre-installed on most Linux distributions.
 ### Before Wiping
 - ✅ **Root check:** Verifies the program is run with root privileges
 - ✅ **Device information:** Displays full device details before proceeding
-- ✅ **Mount detection:** Warns if device or partitions are mounted
+- ✅ **Mount safety check:** **STOPS EXECUTION** if device or partitions are mounted
 - ✅ **Explicit confirmation:** Requires user to type 'y' to proceed
 
 ### During Wiping
 - ✅ **Progress tracking:** Real-time feedback on operation status
 - ✅ **Interruptible:** Can be stopped at any time with Ctrl+C (immediate response)
 - ✅ **Resumable:** Automatically saves progress and allows resuming from interruption point
-- ✅ **Memory efficient:** Uses 100 MB chunks to avoid excessive memory usage
-- ✅ **Immediate writes:** Each chunk is flushed and synced to storage immediately
 
-### Random Data
-- Uses `os.urandom()` for cryptographically secure random data
+### Mount Safety Protection
+**🚨 CRITICAL SAFETY FEATURE: Mount Detection and Prevention**
+
+wipeit includes a comprehensive mount safety system that **prevents accidental data loss**:
+
+- **Automatic Detection:** Checks if the target device or any of its partitions are mounted
+- **Immediate Termination:** **STOPS EXECUTION** if mounted devices are detected
+- **Detailed Information:** Shows exactly which partitions are mounted and where
+- **Clear Instructions:** Provides step-by-step commands to safely unmount devices
+- **Safety Warnings:** Explains the risks of wiping mounted devices
+
+**Example of mount safety in action:**
+```bash
+$ sudo wipeit /dev/sdb
+======================================================================
+🚨 SAFETY CHECK FAILED - DEVICE IS MOUNTED
+======================================================================
+❌ Cannot proceed with wiping /dev/sdb
+   The device or its partitions are currently mounted!
+
+📌 Mounted partitions found:
+   • /dev/sdb1 -> /mnt/usb
+
+🔧 TO FIX THIS ISSUE:
+   1. Unmount all partitions on this device:
+      sudo umount /dev/sdb*
+   2. Or unmount specific partitions:
+      sudo umount /dev/sdb1
+   3. Verify device is unmounted:
+      lsblk /dev/sdb
+   4. Then run wipeit again
+
+⚠️  WARNING: Wiping a mounted device can cause:
+   • Data corruption on the mounted filesystem
+   • System instability or crashes
+   • Loss of data on other mounted partitions
+
+🛑 Program terminated for safety.
+```
+
+**Why this matters:**
+- **Prevents data corruption** on active filesystems
+- **Avoids system crashes** from wiping mounted system partitions
+- **Protects against accidental loss** of important data
+- **Ensures clean, safe wiping** of unmounted devices only
 - Overwrites entire device from start to finish
 - No patterns that could potentially be recovered
 
