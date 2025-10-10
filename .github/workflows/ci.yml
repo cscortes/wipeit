@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.11, 3.12]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install coverage
+
+    - name: Run tests
+      run: |
+        python test_wipeit.py -v
+
+    - name: Run tests with coverage
+      run: |
+        coverage run test_wipeit.py
+        coverage report --show-missing
+
+    - name: Test help functionality
+      run: |
+        python wipeit.py --help
+
+    - name: Test version functionality
+      run: |
+        python wipeit.py --version
+
+    - name: Test buffer size parsing
+      run: |
+        python -c "
+        from wipeit import parse_size
+        test_sizes = ['1M', '100M', '1G', '0.5G', '1T']
+        for size in test_sizes:
+            result = parse_size(size)
+            print(f'{size} -> {result:,} bytes')
+        "
+
+    - name: Test progress file functionality
+      run: |
+        python -c "
+        from wipeit import save_progress, load_progress, clear_progress
+        device = '/dev/test'
+        save_progress(device, 1024*1024*1024, 4*1024*1024*1024, 100*1024*1024)
+        progress = load_progress(device)
+        if progress:
+            print(f'Progress loaded: {progress[\"progress_percent\"]:.2f}% complete')
+        clear_progress(device)
+        print('Progress workflow test completed')
+        "

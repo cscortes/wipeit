@@ -1,0 +1,146 @@
+name: Status Check
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sunday
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install coverage
+
+    - name: Run comprehensive tests
+      run: |
+        echo "Running comprehensive test suite..."
+        python test_wipeit.py -v
+
+    - name: Run coverage analysis
+      run: |
+        coverage run test_wipeit.py
+        coverage report --show-missing
+        coverage html
+
+    - name: Test all command-line options
+      run: |
+        echo "Testing command-line interface..."
+        python wipeit.py --help > /dev/null
+        python wipeit.py --version
+        python wipeit.py -v
+
+    - name: Test buffer size parsing edge cases
+      run: |
+        echo "Testing buffer size parsing..."
+        python -c "
+        from wipeit import parse_size
+        import sys
+        
+        # Test valid sizes
+        valid_tests = [
+            ('1M', 1024*1024),
+            ('100M', 100*1024*1024),
+            ('1G', 1024*1024*1024),
+            ('0.5G', int(0.5*1024*1024*1024)),
+            ('1T', 1024*1024*1024*1024)
+        ]
+        
+        for size_str, expected in valid_tests:
+            result = parse_size(size_str)
+            assert result == expected, f'Failed: {size_str} -> {result} != {expected}'
+            print(f'✅ {size_str} -> {result:,} bytes')
+        
+        # Test invalid sizes
+        invalid_tests = ['500K', '2T', '0.5M', 'ABC', '100', '100MB']
+        for size_str in invalid_tests:
+            try:
+                parse_size(size_str)
+                print(f'❌ {size_str} should have failed')
+                sys.exit(1)
+            except (ValueError, IndexError):
+                print(f'✅ {size_str} correctly rejected')
+        
+        print('All buffer size tests passed!')
+        "
+
+    - name: Test progress file workflow
+      run: |
+        echo "Testing progress file workflow..."
+        python -c "
+        from wipeit import save_progress, load_progress, clear_progress, find_resume_files, display_resume_info
+        import os
+        
+        # Test complete workflow
+        device = '/dev/test'
+        written = 1024 * 1024 * 1024
+        total_size = 4 * 1024 * 1024 * 1024
+        chunk_size = 100 * 1024 * 1024
+        
+        # Save progress
+        save_progress(device, written, total_size, chunk_size)
+        print('✅ Progress saved')
+        
+        # Load progress
+        progress = load_progress(device)
+        assert progress is not None, 'Progress should be loadable'
+        assert progress['device'] == device, 'Device should match'
+        assert progress['written'] == written, 'Written bytes should match'
+        print('✅ Progress loaded')
+        
+        # Test resume file detection
+        resume_files = find_resume_files()
+        assert len(resume_files) == 1, 'Should find one resume file'
+        print('✅ Resume file detection working')
+        
+        # Test display (capture output)
+        import io
+        import sys
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+        display_resume_info()
+        output = sys.stdout.getvalue()
+        sys.stdout = old_stdout
+        assert 'Found pending wipe operations' in output, 'Should display resume info'
+        print('✅ Resume info display working')
+        
+        # Clear progress
+        clear_progress(device)
+        progress = load_progress(device)
+        assert progress is None, 'Progress should be cleared'
+        print('✅ Progress cleared')
+        
+        print('All progress file tests passed!')
+        "
+
+    - name: Generate test report
+      run: |
+        echo "## Test Report" > test-report.md
+        echo "Generated on: $(date)" >> test-report.md
+        echo "" >> test-report.md
+        echo "### Test Results" >> test-report.md
+        echo "- ✅ Unit tests: All passed" >> test-report.md
+        echo "- ✅ Command-line interface: Working" >> test-report.md
+        echo "- ✅ Buffer size parsing: Working" >> test-report.md
+        echo "- ✅ Progress file management: Working" >> test-report.md
+        echo "- ✅ Resume functionality: Working" >> test-report.md
+        echo "" >> test-report.md
+        echo "### Coverage" >> test-report.md
+        coverage run test_wipeit.py
+        coverage report >> test-report.md
+
+    - name: Upload test report
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-report
+        path: test-report.md
