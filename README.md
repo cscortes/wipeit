@@ -262,7 +262,7 @@ When resuming an interrupted wipe on an HDD:
 
 This ensures that:
 - ✅ **Optimal performance** is maintained throughout the entire wipe process
-- ✅ **No duplicate testing** when resuming with existing pretest results  
+- ✅ **No duplicate testing** when resuming with existing pretest results
 - ✅ **Consistent algorithm** is used from start to finish
 - ✅ **Time savings** by reusing previous pretest results
 
