@@ -549,7 +549,7 @@ class TestHDDPretest(unittest.TestCase):
         self.assertIn('Testing beginning of disk', output)
         self.assertIn('Testing middle of disk', output)
         self.assertIn('Testing end of disk', output)
-        self.assertIn('Pretest Analysis', output)
+        self.assertIn('PRETEST ANALYSIS', output)
 
     @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
