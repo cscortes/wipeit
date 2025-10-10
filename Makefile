@@ -44,6 +44,10 @@ tests:
 	@echo "=== Running Unit Tests ==="
 	@python3 -m unittest test_wipeit -v
 	@echo ""
+	@echo "=== Running Import Sorting Check (isort) ==="
+	@echo "Checking import order..."
+	@python3 -m isort --check-only --diff wipeit.py test_wipeit.py
+	@echo ""
 	@echo "=== Running Style Checks (flake8) ==="
 	@echo "Checking wipeit.py..."
 	@python3 -m flake8 wipeit.py --max-line-length=79 --count
@@ -52,6 +56,7 @@ tests:
 	@echo ""
 	@echo "=== Test Summary ==="
 	@echo "All tests completed successfully!"
+	@echo "Import sorting checks passed."
 	@echo "Style checks passed - no line length violations found."
 	@echo ""
 	@echo "✅ Test suite passed - code is ready for production"

@@ -3,13 +3,13 @@
 Unit tests for wipeit - Secure device wiping utility
 """
 
-import unittest
-import os
 import json
-import time
+import os
 import sys
-from unittest.mock import patch, mock_open, MagicMock
+import time
+import unittest
 from io import StringIO
+from unittest.mock import MagicMock, mock_open, patch
 
 import wipeit
 

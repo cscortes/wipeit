@@ -6,15 +6,15 @@ Overwrites block devices with random data for secure data destruction.
 
 __version__ = "0.3.1"
 
+import argparse
+import fcntl
+import json
+import os
+import signal
+import struct
 import subprocess
 import sys
-import os
-import fcntl
-import struct
 import time
-import argparse
-import json
-import signal
 
 
 def get_device_info(device):

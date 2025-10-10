@@ -6,4 +6,5 @@
     - else continue with next item on release check list.
 - bump symantic version
 - update all documentation, Changes, readme, testdesign, arch
+- create a branch tag with this new version
 - commit to git
