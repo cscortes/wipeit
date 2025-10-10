@@ -1,0 +1,11 @@
+Device: /dev/sdb
+------------------------------------------------------------------
+💾 Using buffer size: 100 MB (0.10 GB)
+📏 Size: 465.76 GB
+🏷️  Model: WDC_WD5000LPVT-08G33T1
+🔢 Serial: WD-WX21A82U4593
+💾 Type: HDD (confidence: HIGH)
+🔍 Detection details: Rotational device
+📁 Device and partitions:
+NAME   SIZE TYPE MOUNTPOINTS
+sdb  465.8G disk 

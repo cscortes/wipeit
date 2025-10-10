@@ -485,7 +485,7 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v0.4.0)
+### Current Test Coverage (v1.0.0)
 - **Total Test Classes**: 8
 - **Total Test Cases**: 34
 - **Test Coverage Breakdown**:
@@ -507,7 +507,7 @@ jobs:
 
 This test design document provides comprehensive coverage for all wipeit features. It should be updated whenever new features are added to ensure complete test coverage and maintainability.
 
-### Recent Updates (v0.4.0)
+### Recent Updates (v1.0.0)
 - Added comprehensive test coverage for HDD pretest functionality
 - Added critical bug test for float-to-integer conversion in adaptive chunk sizing
 - Increased test count from 29 to 34 tests

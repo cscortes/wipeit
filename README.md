@@ -415,7 +415,7 @@ wipeit -v
 **Example output:**
 ```bash
 $ wipeit --version
-wipeit 0.4.0
+wipeit 1.0.0
 ```
 
 ### Resume functionality

@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-01-27
+
+### Added
+- **Major version milestone**: First stable release of wipeit
+- **Comprehensive CI/CD pipeline**: Full GitHub Actions integration with testing, linting, and security scanning
+- **Enhanced documentation**: Complete architecture documentation, CI/CD guide, and safety setup instructions
+- **Local development tools**: Makefile with targets for testing, linting, security scanning, and pre-commit preparation
+
+### Changed
+- **CI/CD improvements**: Removed code formatting from GitHub Actions, focusing on testing and quality checks
+- **Documentation updates**: Updated all documentation to reflect current CI/CD practices and tool usage
+- **Release process**: Streamlined release checklist with version update reminders
+
+### Fixed
+- **Critical bug fixes**: Fixed float-to-integer conversion issues in adaptive chunking algorithm
+- **Test coverage**: Expanded test suite with comprehensive coverage of HDD pretest and adaptive chunking
+- **Version consistency**: Ensured all files maintain consistent version numbering
+
+### Security
+- **Security scanning**: Integrated bandit and safety security tools with proper configuration
+- **Dependency management**: Updated dependency requirements and security scanning setup
+
 ## [0.4.0] - 2025-10-10
 
 ### Added

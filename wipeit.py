@@ -4,7 +4,7 @@ wipeit - Secure device wiping utility
 Overwrites block devices with random data for secure data destruction.
 """
 
-__version__ = "0.4.0"
+__version__ = "1.0.0"
 
 import argparse
 import fcntl
