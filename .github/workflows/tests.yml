@@ -39,9 +39,8 @@ jobs:
       run: |
         make tests
 
-    - name: Generate coverage report
+    - name: Generate coverage XML for Codecov
       run: |
-        coverage report
         coverage xml
 
     - name: Upload coverage to Codecov

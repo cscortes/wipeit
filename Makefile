@@ -47,8 +47,9 @@ help:
 tests:
 	@echo "Running comprehensive test suite..."
 	@echo ""
-	@echo "=== Running Unit Tests ==="
-	@python3 -m unittest test_wipeit -v
+	@echo "=== Running Unit Tests with Coverage ==="
+	@python3 -m coverage run test_wipeit.py
+	@python3 -m coverage report --show-missing
 	@echo ""
 	@echo "=== Running Import Sorting Check (isort) ==="
 	@echo "Checking import order..."

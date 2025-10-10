@@ -31,9 +31,9 @@ jobs:
       run: |
         make tests
 
-    - name: Generate coverage report
+    - name: Generate coverage XML
       run: |
-        coverage report --show-missing
+        coverage xml
 
     - name: Test help functionality
       run: |
