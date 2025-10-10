@@ -506,9 +506,11 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                             'recommended_algorithm'] == "adaptive_chunk"):
                     position_ratio = written / size
                     if position_ratio < 0.1:
-                        current_chunk_size = min(chunk_size * 1.5, remaining)
+                        current_chunk_size = int(min(chunk_size * 1.5,
+                                                     remaining))
                     elif position_ratio > 0.9:
-                        current_chunk_size = min(chunk_size * 0.7, remaining)
+                        current_chunk_size = int(min(chunk_size * 0.7,
+                                                     remaining))
 
                 to_write = min(current_chunk_size, remaining)
                 data = os.urandom(to_write)
