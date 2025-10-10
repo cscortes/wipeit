@@ -26,6 +26,9 @@ def get_device_info(device):
         lines = model.splitlines()
         info = {line.split('=')[0]: line.split('=')[1]
                 for line in lines if '=' in line}
+        print("=" * 70)
+        print("📋 DEVICE INFORMATION")
+        print("=" * 70)
         print(f"🔧 Device: {device}")
         print(f"📏 Size: {int(size) / (1024**3):.2f} GB")
         if 'ID_MODEL' in info:
@@ -208,6 +211,9 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
     Perform pretest on HDD to measure write speeds at different positions.
     Returns dictionary with speed measurements and recommended algorithm.
     """
+    print("=" * 70)
+    print("🔬 HDD PRETEST")
+    print("=" * 70)
     print("🔍 Performing HDD pretest to optimize wiping algorithm...")
     print("   This will test write speeds at different disk positions.")
     print("   ⚠️  WARNING: This will write test data to the disk!")
@@ -275,7 +281,9 @@ def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
             'reason': reason
         }
 
-        print("\n📊 Pretest Analysis:")
+        print("\n" + "=" * 70)
+        print("📊 PRETEST ANALYSIS")
+        print("=" * 70)
         print(f"  ⚡ Average speed: {avg_speed:.2f} MB/s")
         print(f"  📈 Speed variance: {speed_variance:.2f} MB/s")
         print(f"  🎯 Recommended algorithm: {algorithm}")
@@ -493,6 +501,11 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
 
         signal.signal(signal.SIGINT, signal_handler)
 
+        print("\n" + "=" * 70)
+        print("🔄 WIPING PROCESS")
+        print("=" * 70)
+        print("Starting secure wipe with random data...")
+
         with open(device, 'wb') as f:
             if written > 0:
                 f.seek(written)
@@ -568,12 +581,18 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
                 print(progress_line, end="", flush=True)
 
         clear_progress(device)
-        print("\n\n🎉 Wipe completed successfully!")
+        print("\n\n" + "=" * 70)
+        print("🎉 WIPE COMPLETED")
+        print("=" * 70)
+        print("✅ Wipe completed successfully!")
         print(f"📊 Total written: {written / (1024**3):.2f} GB")
         print("🔒 Device has been securely wiped with random data")
 
     except KeyboardInterrupt:
-        print(f"\n\n⏸️  Wipe interrupted at {written / (1024**3):.2f} GB "
+        print("\n\n" + "=" * 70)
+        print("⏸️  WIPE INTERRUPTED")
+        print("=" * 70)
+        print(f"⏸️  Wipe interrupted at {written / (1024**3):.2f} GB "
               f"({written / size * 100:.2f}% complete)")
         save_progress(device, written, size, chunk_size, pretest_results)
         print("💾 Progress saved. To resume, run:")
@@ -637,6 +656,9 @@ Disk type detection and HDD pretest:
             sys.exit(1)
         try:
             chunk_size = parse_size(args.buffer_size)
+            print("=" * 70)
+            print("⚙️  CONFIGURATION")
+            print("=" * 70)
             print(f"💾 Using buffer size: {chunk_size / (1024**2):.0f} MB "
                   f"({chunk_size / (1024**3):.2f} GB)")
         except ValueError as e:
