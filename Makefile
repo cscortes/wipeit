@@ -3,7 +3,7 @@
 # This Makefile provides targets for building, testing, and maintaining
 # the wipeit project according to the programming style guide.
 
-.PHONY: info tests lint pre-git-prep help
+.PHONY: info tests lint pre-git-prep security help
 
 # Default target - show help information
 info: help
@@ -30,11 +30,17 @@ help:
 	@echo "                   - Future: may include additional pre-commit tasks"
 	@echo "                   - Use before committing to ensure clean code"
 	@echo ""
+	@echo "  security       - Run security scans with bandit and safety"
+	@echo "                   - Bandit: Scans for common security issues in code"
+	@echo "                   - Safety: Checks for known vulnerabilities in dependencies"
+	@echo "                   - Ensures code security best practices"
+	@echo ""
 	@echo "Usage examples:"
 	@echo "  make           # Show this help"
 	@echo "  make info      # Show this help"
 	@echo "  make tests     # Run all tests and style checks"
 	@echo "  make lint      # Run only style checks"
+	@echo "  make security  # Run security scans"
 	@echo "  make pre-git-prep  # Fix code style before committing"
 
 # Run comprehensive test suite including flake8 style checks
@@ -90,3 +96,18 @@ pre-git-prep:
 	@echo ""
 	@echo "✅ Code prepared for git commit - all style issues fixed"
 	@echo "💡 Future: This target may include additional pre-commit tasks"
+
+# Run security scans with bandit and safety
+security:
+	@echo "Running security scans..."
+	@echo ""
+	@echo "=== Running Bandit Security Scan ==="
+	@echo "Scanning for high/medium severity security issues..."
+	@python3 -m bandit -r . -f txt -ll || echo "⚠️  Bandit found issues (see output above)"
+	@echo ""
+	@echo "=== Running Safety Dependency Check ==="
+	@echo "Checking for known security vulnerabilities in dependencies..."
+	@python3 -m safety check || echo "⚠️  Safety found issues (see output above)"
+	@echo ""
+	@echo "✅ Security scans completed"
+	@echo "💡 Note: Low severity issues in system tools are expected"
