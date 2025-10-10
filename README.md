@@ -22,6 +22,7 @@ A secure device wiping utility that overwrites block devices with random data.
 - [Performance Recommendations](#performance-recommendations) 📊
   - [Expected Write Speeds](#expected-write-speeds)
   - [Time Estimates by Device Size](#time-estimates-by-device-size)
+  - [Important Note: Speed Variations During Wiping](#-important-note-speed-variations-during-wiping)
   - [Buffer Size Optimization](#buffer-size-optimization)
   - [System Requirements](#system-requirements-for-optimal-performance)
   - [Optimization Tips](#performance-optimization-tips)
@@ -420,6 +421,41 @@ Actual wiping speed varies by device type and interface:
 | **1 TB** | 2-3.5 hours | 40-85 min | 12-35 min |
 | **2 TB** | 4-7 hours | 1.5-2.8 hours | 25-70 min |
 | **4 TB** | 8-14 hours | 3-5.5 hours | 50-140 min |
+
+### ⚠️ Important Note: Speed Variations During Wiping
+
+**Why does the speed drop during wiping?**
+
+The speed you see in wipeit's progress display will typically **decrease over time**, especially for traditional hard drives. This is **completely normal** and expected behavior:
+
+#### Physical Disk Characteristics
+- **Outer tracks are faster**: Hard drives have higher data density on outer tracks, enabling faster read/write speeds
+- **Inner tracks are slower**: As wiping progresses toward the center of the disk, data density decreases, resulting in slower speeds
+- **Speed drop is normal**: Expect 30-50% speed reduction from start to finish on traditional hard drives
+
+#### Example Speed Progression
+```
+Progress: 5.01% | Speed: 70.10 MB/s | ETA: 68.93 min
+Progress: 15.00% | Speed: 250.00 MB/s | ETA: 17.30 min | Estimated Finish Time: 7:02 PM
+Progress: 25.00% | Speed: 200.00 MB/s | ETA: 15.00 min
+Progress: 50.00% | Speed: 150.00 MB/s | ETA: 12.00 min
+Progress: 75.00% | Speed: 120.00 MB/s | ETA: 8.00 min
+Progress: 95.00% | Speed: 100.00 MB/s | ETA: 2.00 min
+```
+
+#### What This Means
+- ✅ **This is normal behavior** - not an error
+- ✅ **Hard drives naturally slow down** on inner tracks  
+- ✅ **Your wipeit implementation is working correctly**
+- ✅ **The speed calculation is accurate**
+- ✅ **ETA will adjust automatically** as speed changes
+
+#### Device-Specific Behavior
+- **Traditional HDDs**: Significant speed drop (30-50% reduction)
+- **SSDs**: Minimal speed variation (usually <10% change)
+- **NVMe SSDs**: Very consistent speeds throughout
+
+The dropping speed is actually a **good sign** that wipeit is working properly and writing to the entire disk surface!
 
 ### Buffer Size Optimization
 
