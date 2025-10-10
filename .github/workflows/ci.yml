@@ -25,11 +25,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install coverage
+        pip install coverage autopep8
 
-    - name: Run tests
+    - name: Run tests with make
       run: |
-        python test_wipeit.py -v
+        make tests
 
     - name: Run tests with coverage
       run: |

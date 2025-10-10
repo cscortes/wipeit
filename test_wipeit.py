@@ -4,18 +4,16 @@ Unit tests for wipeit - Secure device wiping utility
 """
 
 import unittest
-import tempfile
 import os
 import json
 import time
 import sys
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch
 from io import StringIO
 
-# Add the current directory to the path so we can import wipeit
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 import wipeit
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 
 class TestParseSize(unittest.TestCase):
@@ -52,8 +50,8 @@ class TestParseSize(unittest.TestCase):
             '0.5M',  # Too small
             'ABC',   # Not a number
             '100',   # No suffix
-            '100MB', # Wrong suffix format
-            '1.5.2G', # Invalid decimal
+            '100MB',  # Wrong suffix format
+            '1.5.2G',  # Invalid decimal
         ]
 
         for size_str in invalid_sizes:
@@ -378,13 +376,14 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 0.2.0', output)
+        self.assertIn('wipeit 0.3.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
     @patch('wipeit.display_resume_info', return_value=False)
     @patch('wipeit.list_all_devices')
-    def test_main_no_args_as_root(self, mock_list_devices, mock_display_resume, mock_geteuid):
+    def test_main_no_args_as_root(self, mock_list_devices,
+                                  mock_display_resume, mock_geteuid):
         """Test main function with no arguments as root."""
         wipeit.main()
         mock_display_resume.assert_called_once()
@@ -394,7 +393,8 @@ class TestMainFunction(unittest.TestCase):
     @patch('os.geteuid', return_value=1000)  # Mock non-root user
     @patch('wipeit.display_resume_info', return_value=False)
     @patch('sys.exit')
-    def test_main_no_args_as_non_root(self, mock_exit, mock_display_resume, mock_geteuid):
+    def test_main_no_args_as_non_root(self, mock_exit, mock_display_resume,
+                                      mock_geteuid):
         """Test main function with no arguments as non-root."""
         wipeit.main()
         mock_display_resume.assert_called_once()
@@ -404,7 +404,8 @@ class TestMainFunction(unittest.TestCase):
     @patch('os.geteuid', return_value=1000)  # Mock non-root user
     @patch('builtins.input', return_value='n')  # Mock user input
     @patch('sys.exit')
-    def test_main_with_device_as_non_root(self, mock_exit, mock_input, mock_geteuid):
+    def test_main_with_device_as_non_root(self, mock_exit, mock_input,
+                                          mock_geteuid):
         """Test main function with device argument as non-root."""
         wipeit.main()
         mock_exit.assert_called_once_with(1)
@@ -464,7 +465,7 @@ class TestIntegration(unittest.TestCase):
         """Test the milestone tracking logic for estimated finish time."""
         # Test milestone calculation
         size = 1000
-        
+
         # Test various progress levels
         test_cases = [
             (50, 5),    # 5% milestone
@@ -478,11 +479,13 @@ class TestIntegration(unittest.TestCase):
             (450, 45),  # 45% milestone
             (500, 50),  # 50% milestone
         ]
-        
+
         for written, expected_milestone in test_cases:
             current_milestone = int(written / size * 100) // 5 * 5
             self.assertEqual(current_milestone, expected_milestone,
-                           f"Failed for written={written}, expected={expected_milestone}, got={current_milestone}")
+                             f"Failed for written={written}, "
+                             f"expected={expected_milestone}, "
+                             f"got={current_milestone}")
 
     @patch('time.time')
     @patch('time.strftime')
@@ -491,15 +494,17 @@ class TestIntegration(unittest.TestCase):
         # Mock current time
         mock_time.return_value = 1640000000  # Fixed timestamp
         mock_strftime.return_value = "07:40 PM"
-        
+
         # Test time calculation
         current_time = time.time()
         eta_seconds = 3600  # 1 hour
         estimated_finish = current_time + eta_seconds
-        finish_time_str = time.strftime("%I:%M %p", time.localtime(estimated_finish))
-        
+        finish_time_str = time.strftime("%I:%M %p",
+                                        time.localtime(estimated_finish))
+
         # Verify the formatting was called correctly
-        mock_strftime.assert_called_with("%I:%M %p", time.localtime(estimated_finish))
+        mock_strftime.assert_called_with("%I:%M %p",
+                                         time.localtime(estimated_finish))
         self.assertEqual(finish_time_str, "07:40 PM")
 
 

@@ -30,12 +30,15 @@ A secure device wiping utility that overwrites block devices with random data.
 
 ## Features
 
-- 🔍 List all block devices with detailed information (size, model, serial, partitions)
+- 🔍 List all block devices with detailed information (size, model, serial, partitions, disk type)
 - 🔒 Securely wipe devices by overwriting with random data
 - 📊 Real-time progress display with speed and ETA
 - ⚠️  Safety checks for mounted devices
 - 💾 Chunked writing for efficient memory usage
 - 🛡️ Root privilege verification before execution
+- 🎯 **NEW**: Automatic disk type detection (HDD, SSD, NVMe)
+- 🔬 **NEW**: HDD pretest with adaptive algorithms for optimal performance
+- ⚡ **NEW**: Smart algorithm selection based on disk characteristics
 
 ## Installation
 
@@ -165,6 +168,90 @@ sudo wipeit -b 100M /dev/sdx
 - Default: `100M`
 - Larger buffers may improve speed but use more memory
 
+### Disk Type Detection and HDD Pretest
+
+wipeit now automatically detects your disk type and optimizes the wiping process:
+
+#### Automatic Disk Type Detection
+
+```bash
+$ sudo wipeit /dev/sdb
+
+Device: /dev/sdb
+Size: 500.00 GB
+Model: WDC_WD5000AAKX-00ERMA0
+Serial: WD-WMAYUA1234567
+Type: HDD (confidence: HIGH)
+Detection details: Rotational device
+Device and partitions:
+NAME SIZE TYPE MOUNTPOINTS
+sdb  500G disk
+
+/dev/sdb does not appear to be mounted.
+
+💾 Detected disk type: HDD (confidence: HIGH)
+🔄 HDD detected - performing pretest to optimize wiping algorithm...
+```
+
+#### HDD Pretest Process
+
+For HDDs, wipeit performs a pretest to measure write speeds at different disk positions:
+
+```bash
+🔍 Performing HDD pretest to optimize wiping algorithm...
+This will test write speeds at different disk positions.
+  Testing beginning of disk...
+    Beginning: 120.45 MB/s
+  Testing middle of disk...
+    Middle: 95.32 MB/s
+  Testing end of disk...
+    End: 78.21 MB/s
+
+📊 Pretest Analysis:
+  Average speed: 97.99 MB/s
+  Speed variance: 42.24 MB/s
+  Recommended algorithm: adaptive_chunk
+  Reason: High speed variance detected - adaptive chunk sizing recommended
+
+✅ Pretest complete. Using adaptive_chunk algorithm.
+  Using adaptive chunk sizing based on disk position
+```
+
+#### Algorithm Types
+
+Based on the pretest results, wipeit selects the optimal algorithm:
+
+- **Standard**: For SSDs, NVMe drives, and HDDs with consistent speeds
+- **Adaptive Chunk**: For HDDs with high speed variance (adjusts chunk size based on disk position)
+- **Small Chunk**: For very slow HDDs (uses smaller chunks for better responsiveness)
+
+#### Skip Pretest Option
+
+If you want to bypass the pretest and use the standard algorithm:
+
+```bash
+sudo wipeit --skip-pretest /dev/sdx
+```
+
+This is useful when:
+- You're in a hurry and want to start wiping immediately
+- You're wiping multiple similar drives and already know the optimal settings
+- The pretest is taking too long on very large drives
+
+#### Pretest Behavior on Resume Operations
+
+When resuming an interrupted wipe on an HDD:
+
+- **With existing pretest results**: The previous pretest results are automatically reused, ensuring optimal performance without re-testing
+- **Without pretest results**: A new pretest is performed to optimize the algorithm for the remaining wipe operation
+- **Pretest results are preserved**: All pretest data is saved with progress and restored on resume
+
+This ensures that:
+- ✅ **Optimal performance** is maintained throughout the entire wipe process
+- ✅ **No duplicate testing** when resuming with existing pretest results  
+- ✅ **Consistent algorithm** is used from start to finish
+- ✅ **Time savings** by reusing previous pretest results
+
 **⚠️  CRITICAL WARNING**:
 - This will **PERMANENTLY DESTROY ALL DATA** on the device
 - There is **NO UNDO** operation
@@ -189,7 +276,7 @@ sdb  128G disk
 
 Confirm wipe (y/n): y
 
-Progress: 5.32% | Written: 6.81 GB | Speed: 85.32 MB/s | ETA: 23.45 min | Buffer: 1024M
+Progress: 5.32% | Written: 6.81 GB | Speed: 85.32 MB/s | ETA: 23.45 min | Buffer: 1024M | Algorithm: Adaptive
 ```
 
 ### Stop and resume a wipe operation
@@ -212,16 +299,21 @@ To continue from where you left off:
 sudo ./wipeit.py --resume /dev/sdb
 ```
 
-**Example resume session:**
+**Example resume session with HDD and pretest results:**
 ```bash
 $ sudo ./wipeit.py --resume /dev/sdb
 
+💾 Detected disk type: HDD (confidence: HIGH)
+   Detection details: Rotational device
 Resuming wipe from 19.74 GB (15.42% complete)
 Previous session: Wed Oct  1 18:30:45 2025
+   Found previous pretest results from Wed Oct  1 18:30:45 2025
+✅ Using previous pretest results for optimal algorithm.
+   Previous algorithm: adaptive_chunk
 Device: /dev/sdb
 Size: 128.00 GB
-Model: USB_Flash_Drive
-Serial: 1234567890
+Model: Hitachi_HTS545032B9A300
+Serial: WD-WMAYUA1234567
 Device and partitions:
 NAME SIZE TYPE MOUNTPOINTS
 sdb  128G disk
@@ -230,7 +322,59 @@ sdb  128G disk
 
 Confirm wipe (y/n): y
 
-Progress: 16.12% | Written: 20.64 GB | Speed: 85.32 MB/s | ETA: 16.45 min | Buffer: 100M
+Progress: 16.12% | Written: 20.64 GB | Speed: 85.32 MB/s | ETA: 16.45 min | Buffer: 100M | Algorithm: Adaptive
+```
+
+**Example resume session without pretest results:**
+```bash
+$ sudo ./wipeit.py --resume /dev/sdb
+
+💾 Detected disk type: HDD (confidence: HIGH)
+   Detection details: Rotational device
+Resuming wipe from 19.74 GB (15.42% complete)
+Previous session: Wed Oct  1 18:30:45 2025
+
+🔄 HDD detected - pretest will be performed to optimize wiping algorithm...
+   This will test write speeds at different disk positions.
+   The pretest may take a few minutes depending on disk size.
+
+Proceed with HDD pretest? (y/n): y
+
+🔄 Starting HDD pretest...
+🔍 Performing HDD pretest to optimize wiping algorithm...
+   This will test write speeds at different disk positions.
+   ⚠️  WARNING: This will write test data to the disk!
+   Disk size: 128.00 GB
+   Test chunk size: 100 MB
+   Test positions: 3 locations
+  Testing beginning of disk...
+    Beginning: 120.45 MB/s
+  Testing middle of disk...
+    Middle: 95.32 MB/s
+  Testing end of disk...
+    End: 78.21 MB/s
+
+📊 Pretest Analysis:
+  Average speed: 97.99 MB/s
+  Speed variance: 42.24 MB/s
+  Recommended algorithm: adaptive_chunk
+  Reason: High speed variance detected - adaptive chunk sizing recommended
+
+✅ Pretest complete. Using adaptive_chunk algorithm.
+  Using adaptive chunk sizing based on disk position
+Device: /dev/sdb
+Size: 128.00 GB
+Model: Hitachi_HTS545032B9A300
+Serial: WD-WMAYUA1234567
+Device and partitions:
+NAME SIZE TYPE MOUNTPOINTS
+sdb  128G disk
+
+/dev/sdb does not appear to be mounted.
+
+Confirm wipe (y/n): y
+
+Progress: 16.12% | Written: 20.64 GB | Speed: 85.32 MB/s | ETA: 16.45 min | Buffer: 100M | Algorithm: Adaptive
 ```
 
 #### Starting fresh vs resuming
@@ -445,7 +589,7 @@ Progress: 95.00% | Speed: 100.00 MB/s | ETA: 2.00 min
 
 #### What This Means
 - ✅ **This is normal behavior** - not an error
-- ✅ **Hard drives naturally slow down** on inner tracks  
+- ✅ **Hard drives naturally slow down** on inner tracks
 - ✅ **Your wipeit implementation is working correctly**
 - ✅ **The speed calculation is accurate**
 - ✅ **ETA will adjust automatically** as speed changes

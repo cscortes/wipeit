@@ -4,7 +4,7 @@ wipeit - Secure device wiping utility
 Overwrites block devices with random data for secure data destruction.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 import subprocess
 import sys
@@ -19,10 +19,8 @@ import signal
 
 def get_device_info(device):
     try:
-        # Get size
         size = subprocess.check_output(['blockdev', '--getsize64', device])\
             .decode().strip()
-        # Get model and serial
         cmd = ['udevadm', 'info', '--query=property', '--name', device]
         model = subprocess.check_output(cmd).decode()
         lines = model.splitlines()
@@ -34,11 +32,15 @@ def get_device_info(device):
             print(f"Model: {info['ID_MODEL']}")
         if 'ID_SERIAL_SHORT' in info:
             print(f"Serial: {info['ID_SERIAL_SHORT']}")
-        # Get partitions and mount points
+
+        disk_type, confidence, details = detect_disk_type(device)
+        print(f"Type: {disk_type} (confidence: {confidence})")
+        if details:
+            print(f"Detection details: {', '.join(details)}")
+
         cmd = ['lsblk', '-o', 'NAME,SIZE,TYPE,MOUNTPOINTS', device]
         partitions = subprocess.check_output(cmd).decode()
         print("Device and partitions:\n" + partitions)
-        # Check if mounted
         mount_output = subprocess.check_output(['mount']).decode()
         if device in mount_output:
             print(f"Warning: {device} or its partitions appear to be mounted.")
@@ -66,7 +68,6 @@ def parse_size(size_str):
     """Parse size string with M, G, T suffix (e.g., '100M', '1G', '500M')."""
     size_str = size_str.upper().strip()
 
-    # Extract number and suffix
     if size_str[-1] in ['M', 'G', 'T']:
         try:
             value = float(size_str[:-1])
@@ -76,7 +77,6 @@ def parse_size(size_str):
     else:
         raise ValueError(f"Size must end with M, G, or T: {size_str}")
 
-    # Convert to bytes
     multipliers = {
         'M': 1024 * 1024,
         'G': 1024 * 1024 * 1024,
@@ -85,9 +85,8 @@ def parse_size(size_str):
 
     size_bytes = int(value * multipliers[suffix])
 
-    # Validate range (1M to 1T)
-    min_size = 1024 * 1024  # 1M
-    max_size = 1024 * 1024 * 1024 * 1024  # 1T
+    min_size = 1024 * 1024
+    max_size = 1024 * 1024 * 1024 * 1024
 
     if size_bytes < min_size:
         raise ValueError("Buffer size must be at least 1M")
@@ -104,13 +103,199 @@ def get_block_device_size(device):
         return struct.unpack('Q', buf)[0]
 
 
+def detect_disk_type(device, debug=False):
+    """
+    Detect the type of storage device (HDD, SSD, NVMe).
+    Returns a tuple: (disk_type, confidence_level, details)
+    """
+    try:
+        device_name = os.path.basename(device)
+        if debug:
+            print(f"   Debug: Detecting disk type for {device}")
+            print(f"   Debug: Device name: {device_name}")
+
+        rotational_path = f"/sys/block/{device_name}/queue/rotational"
+        if os.path.exists(rotational_path):
+            with open(rotational_path, 'r') as f:
+                is_rotational = f.read().strip() == '1'
+            if debug:
+                print(f"   Debug: Rotational attribute: {is_rotational}")
+        else:
+            is_rotational = None
+            if debug:
+                print(f"   Debug: Rotational path not found: "
+                      f"{rotational_path}")
+
+        is_nvme = device_name.startswith('nvme')
+        is_mmc = device_name.startswith('mmc')
+
+        try:
+            cmd = ['udevadm', 'info', '--query=property', '--name', device]
+            udev_output = subprocess.check_output(cmd).decode()
+            udev_props = {}
+            for line in udev_output.splitlines():
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    udev_props[key] = value
+        except Exception:
+            udev_props = {}
+
+        ssd_indicators = []
+        if 'ID_ATA_ROTATION_RATE_RPM' in udev_props:
+            rpm = udev_props['ID_ATA_ROTATION_RATE_RPM']
+            if rpm == '0':
+                ssd_indicators.append('zero_rpm')
+            else:
+                ssd_indicators.append(f'rpm_{rpm}')
+
+        nvme_indicators = []
+        if ('ID_BUS' in udev_props and
+                udev_props['ID_BUS'] == 'nvme'):
+            nvme_indicators.append('nvme_bus')
+
+        disk_type = "UNKNOWN"
+        confidence = "LOW"
+        details = []
+
+        if is_nvme or 'nvme_bus' in nvme_indicators:
+            disk_type = "NVMe SSD"
+            confidence = "HIGH"
+            details.append("NVMe interface detected")
+        elif is_mmc:
+            disk_type = "eMMC/MMC"
+            confidence = "HIGH"
+            details.append("MMC interface detected")
+        elif is_rotational is False:
+            disk_type = "SSD"
+            confidence = "HIGH"
+            details.append("Non-rotational device")
+        elif is_rotational is True:
+            disk_type = "HDD"
+            confidence = "HIGH"
+            details.append("Rotational device")
+        elif 'zero_rpm' in ssd_indicators:
+            disk_type = "SSD"
+            confidence = "MEDIUM"
+            details.append("Zero RPM indicates SSD")
+        elif any('rpm_' in indicator for indicator in ssd_indicators):
+            disk_type = "HDD"
+            confidence = "MEDIUM"
+            details.append(f"Rotational speed detected: "
+                           f"{ssd_indicators[0]}")
+        else:
+            model = udev_props.get('ID_MODEL', '').upper()
+            if any(keyword in model for keyword in
+                   ['SSD', 'SOLID STATE']):
+                disk_type = "SSD"
+                confidence = "MEDIUM"
+                details.append("SSD mentioned in model name")
+            elif any(keyword in model for keyword in
+                     ['HDD', 'HARD DISK', 'HARDDRIVE']):
+                disk_type = "HDD"
+                confidence = "MEDIUM"
+                details.append("HDD mentioned in model name")
+
+        return disk_type, confidence, details
+
+    except Exception as e:
+        return "UNKNOWN", "LOW", [f"Detection failed: {str(e)}"]
+
+
+def perform_hdd_pretest(device, chunk_size=100 * 1024 * 1024):
+    """
+    Perform pretest on HDD to measure write speeds at different positions.
+    Returns dictionary with speed measurements and recommended algorithm.
+    """
+    print("🔍 Performing HDD pretest to optimize wiping algorithm...")
+    print("   This will test write speeds at different disk positions.")
+    print("   ⚠️  WARNING: This will write test data to the disk!")
+
+    try:
+        size = get_block_device_size(device)
+        print(f"   Disk size: {size / (1024**3):.2f} GB")
+        print(f"   Test chunk size: {chunk_size / (1024**2):.0f} MB")
+
+        test_positions = [
+            ("beginning", 0),
+            ("middle", size // 2),
+            ("end", size - chunk_size)
+        ]
+
+        print(f"   Test positions: {len(test_positions)} locations")
+
+        results = {}
+        test_data = os.urandom(chunk_size)
+
+        with open(device, 'wb') as f:
+            for position_name, position in test_positions:
+                print(f"  Testing {position_name} of disk...")
+
+                f.seek(position)
+
+                start_time = time.time()
+                f.write(test_data)
+                f.flush()
+                os.fsync(f.fileno())
+                end_time = time.time()
+
+                duration = end_time - start_time
+                speed_mbps = (chunk_size / (1024 * 1024)) / duration
+
+                results[position_name] = {
+                    'position': position,
+                    'speed_mbps': speed_mbps,
+                    'duration': duration
+                }
+
+                print(f"    {position_name.capitalize()}: "
+                      f"{speed_mbps:.2f} MB/s")
+
+        speeds = [results[pos]['speed_mbps'] for pos in results]
+        avg_speed = sum(speeds) / len(speeds)
+        speed_variance = max(speeds) - min(speeds)
+
+        if speed_variance > avg_speed * 0.3:
+            algorithm = "adaptive_chunk"
+            reason = ("High speed variance detected - "
+                      "adaptive chunk sizing recommended")
+        elif avg_speed < 50:
+            algorithm = "small_chunk"
+            reason = ("Low average speed - "
+                      "small chunks for better responsiveness")
+        else:
+            algorithm = "standard"
+            reason = "Consistent speeds - standard algorithm optimal"
+
+        results['analysis'] = {
+            'average_speed': avg_speed,
+            'speed_variance': speed_variance,
+            'recommended_algorithm': algorithm,
+            'reason': reason
+        }
+
+        print("\n📊 Pretest Analysis:")
+        print(f"  Average speed: {avg_speed:.2f} MB/s")
+        print(f"  Speed variance: {speed_variance:.2f} MB/s")
+        print(f"  Recommended algorithm: {algorithm}")
+        print(f"  Reason: {reason}")
+
+        return results
+
+    except Exception as e:
+        print(f"⚠️  Pretest failed: {e}")
+        print("   Error details:", str(e))
+        print("   Falling back to standard algorithm")
+        return None
+
+
 def get_progress_file(device):
     """Get the path to the progress file for a device."""
     device_name = os.path.basename(device)
     return f"wipeit_progress_{device_name}.json"
 
 
-def save_progress(device, written, total_size, chunk_size):
+def save_progress(device, written, total_size, chunk_size,
+                  pretest_results=None):
     """Save current progress to a file."""
     progress_file = get_progress_file(device)
     progress_data = {
@@ -121,6 +306,10 @@ def save_progress(device, written, total_size, chunk_size):
         'timestamp': time.time(),
         'progress_percent': (written / total_size) * 100
     }
+
+    if pretest_results:
+        progress_data['pretest_results'] = pretest_results
+
     try:
         with open(progress_file, 'w') as f:
             json.dump(progress_data, f, indent=2)
@@ -142,7 +331,6 @@ def load_progress(device):
         if progress_data.get('device') != device:
             return None
 
-        # Check if progress file is recent (within 24 hours)
         if time.time() - progress_data.get('timestamp', 0) > 86400:
             return None
 
@@ -172,11 +360,9 @@ def find_resume_files():
             with open(progress_file, 'r') as f:
                 progress_data = json.load(f)
 
-            # Check if progress file is recent (within 24 hours)
             if time.time() - progress_data.get('timestamp', 0) <= 86400:
                 resume_info.append(progress_data)
         except Exception:
-            # Skip corrupted or invalid progress files
             continue
 
     return resume_info
@@ -202,25 +388,37 @@ def display_resume_info():
 
         print(f"\n{i}. Device: {device}")
         print(f"   Progress: {progress_percent:.2f}% complete")
-        print(f"   Written: {written / (1024**3):.2f} GB / {total_size / (1024**3):.2f} GB")
+        print(f"   Written: {written / (1024**3):.2f} GB / "
+              f"{total_size / (1024**3):.2f} GB")
         print(f"   Buffer size: {chunk_size / (1024**2):.0f} MB")
         print(f"   Started: {time.ctime(timestamp)}")
         print(f"   Resume command: sudo ./wipeit.py --resume {device}")
 
-    print(f"\n💡 To resume any operation, use: sudo ./wipeit.py --resume <device>")
-    print(f"💡 To start fresh, the progress file will be overwritten")
+    print("\n💡 To resume any operation, use: "
+          "sudo ./wipeit.py --resume <device>")
+    print("💡 To start fresh, the progress file will be overwritten")
     print("=" * 50)
 
     return True
 
 
-def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
+def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False,
+                skip_pretest=False):
     try:
         size = get_block_device_size(device)
         written = 0
         start_time = time.time()
 
-        # Check for existing progress
+        disk_type, confidence, details = detect_disk_type(device)
+        pretest_results = None
+
+        print(f"\n💾 Detected disk type: {disk_type} "
+              f"(confidence: {confidence})")
+        if details:
+            print(f"   Detection details: {', '.join(details)}")
+
+        progress_data = None
+        existing_pretest_results = None
         if resume:
             progress_data = load_progress(device)
             if progress_data:
@@ -229,14 +427,64 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
                       f"({progress_data['progress_percent']:.2f}% complete)")
                 print(f"Previous session:"
                       f" {time.ctime(progress_data['timestamp'])}")
+
+                if 'pretest_results' in progress_data:
+                    existing_pretest_results = progress_data['pretest_results']
+                    print(f"   Found previous pretest results from "
+                          f"{time.ctime(progress_data['timestamp'])}")
             else:
                 print("No previous progress found, starting from beginning")
 
-        # Set up signal handler for graceful interruption
+        if disk_type == "HDD" and not skip_pretest:
+            if existing_pretest_results:
+                print("✅ Using previous pretest results for algorithm.")
+                pretest_results = existing_pretest_results
+                algo = pretest_results['analysis']['recommended_algorithm']
+                print(f"   Previous algorithm: {algo}")
+            else:
+                print("\n🔄 HDD detected - pretest will be performed "
+                      "to optimize wiping algorithm...")
+                print("   This will test write speeds at different "
+                      "disk positions.")
+                print("   The pretest may take a few minutes "
+                      "depending on disk size.")
+
+                proceed = input("\nProceed with HDD pretest? (y/n): ")
+                if proceed.lower() != 'y':
+                    print("   Pretest skipped by user. "
+                          "Using standard algorithm.")
+                    pretest_results = None
+                else:
+                    print("\n🔄 Starting HDD pretest...")
+                    pretest_results = perform_hdd_pretest(device, chunk_size)
+
+            if pretest_results:
+                algo = pretest_results['analysis']['recommended_algorithm']
+                if not existing_pretest_results:
+                    print(f"\n✅ Pretest complete. Using {algo} algorithm.")
+
+                if algo == "small_chunk":
+                    chunk_size = min(chunk_size, 50 * 1024 * 1024)
+                    if not existing_pretest_results:
+                        print(f"  Adjusted chunk size to "
+                              f"{chunk_size / (1024**2):.0f} MB for "
+                              f"better responsiveness")
+                elif algo == "adaptive_chunk":
+                    if not existing_pretest_results:
+                        print("  Using adaptive chunk sizing based on "
+                              "disk position")
+            else:
+                print("  Using standard algorithm due to pretest failure")
+        elif disk_type == "HDD" and skip_pretest:
+            print("✅ HDD detected - skipping pretest, using standard "
+                  "algorithm")
+        else:
+            print(f"✅ {disk_type} detected - using standard algorithm")
+
         def signal_handler(signum, frame):
             print(f"\nWipe interrupted at {written / (1024**3):.2f} GB "
                   f"({written / size * 100:.2f}% complete)")
-            save_progress(device, written, size, chunk_size)
+            save_progress(device, written, size, chunk_size, pretest_results)
             print("Progress saved. To resume, run:")
             print(f"  sudo ./wipeit.py --resume {device}")
             sys.exit(0)
@@ -244,54 +492,72 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
         signal.signal(signal.SIGINT, signal_handler)
 
         with open(device, 'wb') as f:
-            # Seek to the resume position
             if written > 0:
                 f.seek(written)
-            
-            # Track progress milestones for estimated finish time
-            last_milestone = int(written / size * 100) // 5 * 5  # Last 5% milestone
-            
+
+            last_milestone = int(written / size * 100) // 5 * 5
+
             while written < size:
                 remaining = size - written
-                to_write = min(chunk_size, remaining)
+
+                current_chunk_size = chunk_size
+                if (pretest_results and
+                        pretest_results['analysis'][
+                            'recommended_algorithm'] == "adaptive_chunk"):
+                    position_ratio = written / size
+                    if position_ratio < 0.1:
+                        current_chunk_size = min(chunk_size * 1.5, remaining)
+                    elif position_ratio > 0.9:
+                        current_chunk_size = min(chunk_size * 0.7, remaining)
+
+                to_write = min(current_chunk_size, remaining)
                 data = os.urandom(to_write)
                 f.write(data)
-                f.flush()  # Force immediate write to OS buffer
-                os.fsync(f.fileno())  # Force immediate write to storage device
+                f.flush()
+                os.fsync(f.fileno())
                 written += to_write
-                
-                # Save progress every 1GB or every 10 chunks,
-                # whichever is smaller
+
                 if written % (1024**3) == 0 or \
                    written % (chunk_size * 10) == 0:
-                    save_progress(device, written, size, chunk_size)
-                
+                    save_progress(device, written, size, chunk_size,
+                                  pretest_results)
+
                 elapsed = time.time() - start_time
                 speed = written / elapsed / (1024**2) if elapsed > 0 else 0
                 eta = (size - written) / (written / elapsed) \
                     if elapsed > 0 and written > 0 else 0
-                
-                # Check if we've crossed a 5% milestone
+
                 current_milestone = int(written / size * 100) // 5 * 5
                 progress_percent = written / size * 100
-                
-                # Base progress line
-                progress_line = (f"Progress: {progress_percent:.2f}% "
-                               f"| Written: {written / (1024**3):.2f} GB | "
-                               f"Speed: {speed:.2f} MB/s | "
-                               f"ETA: {eta / 60:.2f} min | "
-                               f"Buffer: {chunk_size / (1024**2):.0f}M")
-                
-                # Add estimated finish time at 5% milestones
-                if current_milestone > last_milestone and current_milestone >= 5:
+
+                algorithm_info = ""
+                if pretest_results:
+                    algo = pretest_results['analysis'][
+                        'recommended_algorithm']
+                    if algo == "adaptive_chunk":
+                        algorithm_info = " | Algorithm: Adaptive"
+                    elif algo == "small_chunk":
+                        algorithm_info = " | Algorithm: Small Chunk"
+
+                progress_line = (
+                    f"Progress: {progress_percent:.2f}% "
+                    f"| Written: {written / (1024**3):.2f} GB | "
+                    f"Speed: {speed:.2f} MB/s | "
+                    f"ETA: {eta / 60:.2f} min | "
+                    f"Buffer: {current_chunk_size / (1024**2):.0f}M"
+                    f"{algorithm_info}")
+
+                if (current_milestone > last_milestone and
+                        current_milestone >= 5):
                     estimated_finish = time.time() + eta
-                    finish_time_str = time.strftime("%I:%M %p", time.localtime(estimated_finish))
-                    progress_line += f" | Estimated Finish Time: {finish_time_str}"
+                    finish_time_str = time.strftime(
+                        "%I:%M %p", time.localtime(estimated_finish))
+                    progress_line += (
+                        f" | Estimated Finish Time: {finish_time_str}")
                     last_milestone = current_milestone
-                
+
                 print(progress_line)
 
-        # Wipe completed successfully
         clear_progress(device)
         print("\n✅ Wipe completed successfully!")
         print(f"Total written: {written / (1024**3):.2f} GB")
@@ -299,14 +565,13 @@ def wipe_device(device, chunk_size=100 * 1024 * 1024, resume=False):
     except KeyboardInterrupt:
         print(f"\nWipe interrupted at {written / (1024**3):.2f} GB "
               f"({written / size * 100:.2f}% complete)")
-        save_progress(device, written, size, chunk_size)
+        save_progress(device, written, size, chunk_size, pretest_results)
         print("Progress saved. To resume, run:")
         print(f"  sudo ./wipeit.py --resume {device}")
     except Exception as e:
         print(f"Error wiping: {e}")
-        # Save progress even on error
         if 'written' in locals():
-            save_progress(device, written, size, chunk_size)
+            save_progress(device, written, size, chunk_size, pretest_results)
 
 
 def main():
@@ -321,6 +586,11 @@ Buffer size examples:
   1T    - 1 terabyte (max)
 
 Range: 1M to 1T
+
+Disk type detection and HDD pretest:
+  wipeit automatically detects disk type (HDD/SSD/NVMe) and performs
+  pretests on HDDs to optimize wiping algorithms. Use --skip-pretest
+  to bypass this feature and use standard algorithm.
         """)
     parser.add_argument("device", nargs="?",
                         help="The device to wipe, e.g., /dev/sdx")
@@ -330,30 +600,31 @@ Range: 1M to 1T
                              "Range: 1M to 1T (default: 100M)")
     parser.add_argument("--resume", action="store_true",
                         help="Resume a previously interrupted wipe operation")
+    parser.add_argument("--skip-pretest", action="store_true",
+                        help="Skip HDD pretest and use standard algorithm")
+    parser.add_argument("--debug", action="store_true",
+                        help="Enable debug output for disk detection")
     parser.add_argument("-v", "--version", action="version",
                         version=f"wipeit {__version__}")
     args = parser.parse_args()
 
     if args.device is None:
-        # Check for resume files first (works without root)
         if display_resume_info():
             print("\n" + "=" * 50)
             print("📋 Available devices (requires sudo):")
             print("=" * 50)
 
-        # Check if running as root (after parsing args so --help works)
         if os.geteuid() != 0:
-            print("Error: This program must be run as root (sudo) to list devices.")
+            print("Error: This program must be run as root (sudo) "
+                  "to list devices.")
             print("Use: sudo ./wipeit.py")
             sys.exit(1)
 
         list_all_devices()
     else:
-        # Check if running as root (after parsing args so --help works)
         if os.geteuid() != 0:
             print("Error: This program must be run as root (sudo).")
             sys.exit(1)
-        # Parse buffer size
         try:
             chunk_size = parse_size(args.buffer_size)
             print(f"Using buffer size: {chunk_size / (1024**2):.0f} MB "
@@ -364,7 +635,6 @@ Range: 1M to 1T
 
         get_device_info(args.device)
 
-        # Check for existing progress if not resuming
         if not args.resume:
             progress_data = load_progress(args.device)
             if progress_data:
@@ -386,7 +656,8 @@ Range: 1M to 1T
 
         confirm = input("Confirm wipe (y/n): ")
         if confirm.lower() == 'y':
-            wipe_device(args.device, chunk_size, args.resume)
+            wipe_device(args.device, chunk_size, args.resume,
+                        args.skip_pretest)
         else:
             print("Aborted.")
 

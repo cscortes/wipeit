@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-01-16
+
+### Added
+- **Makefile with comprehensive targets**:
+  - `make tests` - Run comprehensive test suite with style checks
+  - `make lint` - Run flake8 style checks with 79-character line limit
+  - `make pre-git-prep` - Prepare code for git commit by fixing style issues
+  - `make info` - Display help information for all targets
+- **GitHub Actions integration** - All workflows now use Makefile targets for consistency
+- **Architecture documentation** (ARCH.md) with Mermaid function call graph
+- **Programming style guide compliance** - All code follows 79-character line limit
+- **Enhanced test coverage** - All 29 unit tests pass with 0 linting errors
+
+### Changed
+- **Code formatting** - All Python files now comply with programming style guide
+- **CI/CD workflows** - Updated to use centralized Makefile targets
+- **Documentation structure** - All .md files organized in DOCS/ directory
+
+### Fixed
+- **Line length violations** - All files now within 79-character limit
+- **Import organization** - Cleaned up unused imports in test files
+- **Test integrity** - Preserved all test functionality while fixing style issues
+
 ## [0.2.0] - 2025-01-16
 
 ### Added
