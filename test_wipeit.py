@@ -8,7 +8,7 @@ import os
 import json
 import time
 import sys
-from unittest.mock import patch
+from unittest.mock import patch, mock_open, MagicMock
 from io import StringIO
 
 import wipeit
@@ -508,6 +508,233 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(finish_time_str, "07:40 PM")
 
 
+class TestHDDPretest(unittest.TestCase):
+    """Test HDD pretest functionality."""
+
+    @patch('wipeit.get_block_device_size')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.urandom')
+    @patch('time.time')
+    def test_pretest_successful(self, mock_time, mock_urandom, mock_file,
+                                mock_size):
+        """Test successful HDD pretest."""
+        # Mock device size
+        mock_size.return_value = 100 * 1024 * 1024 * 1024  # 100GB
+
+        # Mock random data
+        mock_urandom.return_value = b'test_data' * 1000
+
+        # Mock time for speed calculation
+        mock_time.side_effect = [0, 1, 1, 2, 2, 3]  # Different durations
+
+        # Mock file operations
+        mock_file.return_value.__enter__.return_value.seek = MagicMock()
+        mock_file.return_value.__enter__.return_value.write = MagicMock()
+        mock_file.return_value.__enter__.return_value.flush = MagicMock()
+        mock_file.return_value.__enter__.return_value.fileno.return_value = 1
+
+        with patch('os.fsync'):
+            with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+                result = wipeit.perform_hdd_pretest('/dev/sdb',
+                                                    100 * 1024 * 1024)
+
+        # Verify pretest was performed
+        self.assertIsNotNone(result)
+        self.assertIn('analysis', result)
+        self.assertIn('recommended_algorithm', result['analysis'])
+
+        # Check output contains expected messages
+        output = mock_stdout.getvalue()
+        self.assertIn('Performing HDD pretest', output)
+        self.assertIn('Testing beginning of disk', output)
+        self.assertIn('Testing middle of disk', output)
+        self.assertIn('Testing end of disk', output)
+        self.assertIn('Pretest Analysis', output)
+
+    @patch('wipeit.get_block_device_size')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.urandom')
+    @patch('time.time')
+    def test_pretest_adaptive_algorithm(self, mock_time, mock_urandom,
+                                        mock_file, mock_size):
+        """Test pretest recommending adaptive algorithm."""
+        # Mock device size
+        mock_size.return_value = 100 * 1024 * 1024 * 1024  # 100GB
+
+        # Mock random data
+        mock_urandom.return_value = b'test_data' * 1000
+
+        # Mock time to simulate high speed variance (adaptive algorithm)
+        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0]
+
+        # Mock file operations
+        mock_file.return_value.__enter__.return_value.seek = MagicMock()
+        mock_file.return_value.__enter__.return_value.write = MagicMock()
+        mock_file.return_value.__enter__.return_value.flush = MagicMock()
+        mock_file.return_value.__enter__.return_value.fileno.return_value = 1
+
+        with patch('os.fsync'):
+            result = wipeit.perform_hdd_pretest('/dev/sdb', 100 * 1024 * 1024)
+
+        # Verify adaptive algorithm is recommended
+        self.assertEqual(result['analysis']['recommended_algorithm'],
+                         'adaptive_chunk')
+
+    @patch('wipeit.get_block_device_size')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.urandom')
+    @patch('time.time')
+    def test_pretest_small_chunk_algorithm(self, mock_time, mock_urandom,
+                                           mock_file, mock_size):
+        """Test pretest recommending small chunk algorithm."""
+        # Mock device size
+        mock_size.return_value = 100 * 1024 * 1024 * 1024  # 100GB
+
+        # Mock random data
+        mock_urandom.return_value = b'test_data' * 1000
+
+        # Mock time to simulate very slow speeds (small chunk algorithm)
+        # Need much slower speeds to trigger small_chunk algorithm
+        # (< 50 MB/s average)
+        mock_time.side_effect = [0, 10, 10, 20, 20, 30]  # Very slow speeds
+
+        # Mock file operations
+        mock_file.return_value.__enter__.return_value.seek = MagicMock()
+        mock_file.return_value.__enter__.return_value.write = MagicMock()
+        mock_file.return_value.__enter__.return_value.flush = MagicMock()
+        mock_file.return_value.__enter__.return_value.fileno.return_value = 1
+
+        with patch('os.fsync'):
+            result = wipeit.perform_hdd_pretest('/dev/sdb', 100 * 1024 * 1024)
+
+        # Verify small chunk algorithm is recommended
+        self.assertEqual(result['analysis']['recommended_algorithm'],
+                         'small_chunk')
+
+
+class TestWipeDeviceIntegration(unittest.TestCase):
+    """Test wipe_device function with pretest integration."""
+
+    @patch('wipeit.get_block_device_size')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.urandom')
+    @patch('time.time')
+    def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_urandom,
+                                             mock_file, mock_size):
+        """Test wipe_device with adaptive chunk algorithm - CRITICAL BUG TEST."""
+        # Mock device size
+        mock_size.return_value = 100 * 1024 * 1024  # 100MB for quick test
+
+        # Mock random data
+        mock_urandom.return_value = b'test_data' * 1000
+
+        # Mock time for pretest and wiping
+        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,  # Pretest times
+                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,  # Wipe start
+                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,  # Progress saves
+                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,  # More progress
+                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]  # Final progress
+
+        # Mock file operations
+        mock_file.return_value.__enter__.return_value.seek = MagicMock()
+        mock_file.return_value.__enter__.return_value.write = MagicMock()
+        mock_file.return_value.__enter__.return_value.flush = MagicMock()
+        mock_file.return_value.__enter__.return_value.fileno.return_value = 1
+
+        # Mock pretest results that recommend adaptive_chunk
+        mock_pretest_results = {
+            'analysis': {
+                'recommended_algorithm': 'adaptive_chunk',
+                'average_speed': 50.0,
+                'speed_variance': 30.0
+            },
+            'measurements': {
+                'beginning': {'speed': 60.0, 'duration': 0.1},
+                'middle': {'speed': 50.0, 'duration': 0.1},
+                'end': {'speed': 40.0, 'duration': 0.1}
+            }
+        }
+
+        with patch('os.fsync'):
+            with patch('wipeit.perform_hdd_pretest',
+                       return_value=mock_pretest_results):
+                with patch('wipeit.detect_disk_type',
+                           return_value=('HDD', 'HIGH', ['rotational=1'])):
+                    with patch('sys.stdout', new_callable=StringIO):
+                        # Mock user input to proceed with wipe
+                        with patch('builtins.input', return_value='y'):
+                            # This should NOT raise the 'float' object error
+                            try:
+                                wipeit.wipe_device('/dev/sdb', 10 * 1024 * 1024,
+                                                   skip_pretest=False)
+                            except TypeError as e:
+                                if "'float' object cannot be interpreted as an integer" in str(e):
+                                    self.fail(
+                                        "CRITICAL BUG: float to int conversion error occurred")
+                                else:
+                                    raise
+
+    @patch('wipeit.get_block_device_size')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.urandom')
+    @patch('time.time')
+    def test_adaptive_chunk_sizing_calculations(self, mock_time, mock_urandom,
+                                                mock_file, mock_size):
+        """Test that adaptive chunk sizing produces integers."""
+        # Mock device size
+        mock_size.return_value = 100 * 1024 * 1024  # 100MB
+
+        # Mock random data
+        mock_urandom.return_value = b'test_data' * 1000
+
+        # Mock time - provide enough values for the entire test
+        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,  # Pretest
+                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,  # Wipe start
+                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,  # Progress saves
+                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,  # More progress
+                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]  # Final progress
+
+        # Mock file operations
+        mock_file.return_value.__enter__.return_value.seek = MagicMock()
+        mock_file.return_value.__enter__.return_value.write = MagicMock()
+        mock_file.return_value.__enter__.return_value.flush = MagicMock()
+        mock_file.return_value.__enter__.return_value.fileno.return_value = 1
+
+        # Mock pretest results
+        mock_pretest_results = {
+            'analysis': {
+                'recommended_algorithm': 'adaptive_chunk'
+            }
+        }
+
+        with patch('os.fsync'):
+            with patch('wipeit.perform_hdd_pretest',
+                       return_value=mock_pretest_results):
+                with patch('wipeit.detect_disk_type',
+                           return_value=('HDD', 'HIGH', ['rotational=1'])):
+                    with patch('sys.stdout', new_callable=StringIO):
+                        # Test that os.urandom receives integers
+                        original_urandom = os.urandom
+                        urandom_calls = []
+
+                        def mock_urandom(size):
+                            urandom_calls.append(size)
+                            # Verify size is an integer
+                            self.assertIsInstance(size, int)
+                            return original_urandom(min(size, 1024))
+
+                        with patch('os.urandom', side_effect=mock_urandom):
+                            # Mock user input to proceed with wipe
+                            with patch('builtins.input', return_value='y'):
+                                wipeit.wipe_device('/dev/sdb', 10 * 1024 * 1024,
+                                                   skip_pretest=False)
+
+                        # Verify we made urandom calls with integers
+                        self.assertGreater(len(urandom_calls), 0)
+                        for size in urandom_calls:
+                            self.assertIsInstance(size, int)
+
+
 if __name__ == '__main__':
     # Create a test suite
     test_suite = unittest.TestSuite()
@@ -520,6 +747,8 @@ if __name__ == '__main__':
         TestDeviceInfoFunctions,
         TestMainFunction,
         TestIntegration,
+        TestHDDPretest,
+        TestWipeDeviceIntegration,
     ]
 
     for test_class in test_classes:
