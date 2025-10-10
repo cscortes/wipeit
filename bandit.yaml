@@ -1,0 +1,11 @@
+exclude_dirs:
+  - .venv
+  - venv
+  - __pycache__
+
+skips:
+  - B404  # subprocess module import (expected for system tools)
+  - B607  # partial executable path (expected for system tools)
+  - B603  # subprocess without shell=True (expected for system tools)
+  - B110  # try/except/pass (used for cleanup)
+  - B112  # try/except/continue (used for error handling)

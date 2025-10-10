@@ -103,7 +103,7 @@ security:
 	@echo ""
 	@echo "=== Running Bandit Security Scan ==="
 	@echo "Scanning for high/medium severity security issues..."
-	@python3 -m bandit -r . -f txt -ll || echo "⚠️  Bandit found issues (see output above)"
+	@python3 -m bandit -r . -c bandit.yaml -f txt -ll || echo "⚠️  Bandit found issues (see output above)"
 	@echo ""
 	@echo "=== Running Safety Dependency Check ==="
 	@echo "Checking for known security vulnerabilities in dependencies..."

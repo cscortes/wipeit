@@ -91,8 +91,8 @@ jobs:
 
     - name: Run bandit security scan
       run: |
-        bandit -r . -f json -o bandit-report.json || true
-        bandit -r . -f txt
+        bandit -r . -c bandit.yaml -f json -o bandit-report.json || true
+        bandit -r . -c bandit.yaml -f txt
 
     - name: Run safety check
       run: |
