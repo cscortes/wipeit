@@ -816,11 +816,46 @@ This project uses GitHub Actions for continuous integration:
 
 ### Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+We welcome contributions from the community! There are many ways to participate:
+
+#### 🌟 **Show Your Support**
+- **Star the project** ⭐ - Help others discover wipeit
+- **Watch for updates** 👀 - Stay informed about new features
+- **Share with others** 📢 - Spread the word about secure data wiping
+
+#### 🐛 **Report Issues**
+- **Bug reports** - Found a problem? Let us know!
+- **Performance issues** - Experiencing slow wiping speeds?
+- **Compatibility problems** - Issues with specific hardware?
+- **Documentation gaps** - Something unclear or missing?
+
+#### 💡 **Request Features**
+- **New algorithms** - Have ideas for better wiping methods?
+- **UI improvements** - Suggestions for better user experience?
+- **Platform support** - Need support for additional operating systems?
+- **Integration requests** - Want wipeit to work with other tools?
+
+#### 🔧 **Code Contributions**
+1. **Fork the repository**
+2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
+3. **Add tests** for new functionality
+4. **Ensure all tests pass** (`make tests`)
+5. **Follow coding standards** (`make pre-git-prep`)
+6. **Submit a pull request**
+
+#### 📚 **Documentation**
+- **Improve guides** - Make documentation clearer
+- **Add examples** - Share use cases and workflows
+- **Translate** - Help make wipeit accessible worldwide
+- **Tutorials** - Create step-by-step guides
+
+#### 🧪 **Testing**
+- **Test on different hardware** - Help ensure compatibility
+- **Report edge cases** - Find scenarios we haven't tested
+- **Performance testing** - Help optimize wiping speeds
+- **Security validation** - Verify wiping effectiveness
+
+**Every contribution matters!** Whether you're reporting a bug, suggesting a feature, or submitting code, you're helping make wipeit better for everyone. 🚀
 
 ## Documentation
 
@@ -835,10 +870,28 @@ MIT License
 
 ## Support
 
-If you encounter issues or have questions:
-1. Check the troubleshooting section above
-2. Verify all system requirements are met
-3. Open an issue on the project repository
+### 🆘 **Need Help?**
+
+**Before asking for help:**
+1. Check the [troubleshooting section](#troubleshooting-performance-issues) above
+2. Verify all [system requirements](#requirements) are met
+3. Review the [documentation](DOCS/) for detailed guides
+
+### 📞 **Get Support**
+
+- **🐛 Found a bug?** → [Open an issue](https://github.com/cscortes/wipeit/issues/new?template=bug_report.md)
+- **💡 Have a feature request?** → [Request a feature](https://github.com/cscortes/wipeit/issues/new?template=feature_request.md)
+- **❓ General questions?** → [Start a discussion](https://github.com/cscortes/wipeit/discussions)
+- **📖 Need documentation help?** → [Improve the docs](https://github.com/cscortes/wipeit/issues/new?template=documentation.md)
+
+### 🌟 **Show Your Support**
+
+- **Star this project** ⭐ - Help others discover wipeit
+- **Watch for updates** 👀 - Get notified of new releases
+- **Share your experience** 💬 - Help others in discussions
+- **Contribute** 🔧 - See the [Contributing](#contributing) section above
+
+**We're here to help!** The wipeit community is friendly and responsive. Don't hesitate to reach out! 🤝
 
 ## ⚠️  Final Warning
 
