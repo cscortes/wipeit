@@ -35,24 +35,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install coverage[toml] flake8 isort
 
-    - name: Run tests and generate coverage
+    - name: Run tests
       run: |
         make tests
-        cd src
-        echo "Checking for coverage files..."
-        ls -la .coverage* || echo "No coverage files found"
-        echo "Running coverage xml..."
-        coverage xml || echo "Coverage XML generation failed"
-        echo "Coverage XML generation completed"
-        ls -la coverage.xml || echo "No coverage.xml file found"
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        file: ./src/coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
 
   lint:
     runs-on: ubuntu-latest
