@@ -31,21 +31,18 @@ jobs:
       run: |
         make tests
 
-    - name: Generate coverage XML
-      run: |
-        coverage xml
 
     - name: Test help functionality
       run: |
-        python wipeit.py --help
+        python src/wipeit.py --help
 
     - name: Test version functionality
       run: |
-        python wipeit.py --version
+        python src/wipeit.py --version
 
     - name: Test buffer size parsing
       run: |
-        python -c "
+        cd src && python -c "
         from wipeit import parse_size
         test_sizes = ['1M', '100M', '1G', '0.5G', '1T']
         for size in test_sizes:
@@ -55,7 +52,7 @@ jobs:
 
     - name: Test progress file functionality
       run: |
-        python -c "
+        cd src && python -c "
         from wipeit import save_progress, load_progress, clear_progress
         device = '/dev/test'
         save_progress(device, 1024*1024*1024, 4*1024*1024*1024, 100*1024*1024)
