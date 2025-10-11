@@ -403,7 +403,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.2.0', output)
+        self.assertIn('wipeit 1.3.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -657,42 +657,25 @@ class TestWipeDeviceIntegration(unittest.TestCase):
 
     @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
-    @patch('os.urandom')
     @patch('time.time')
-    def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_urandom,
-                                             mock_file, mock_size):
+    def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_file,
+                                             mock_size):
         """Test wipe_device with adaptive chunk - CRITICAL BUG TEST."""
-        # Mock device size
-        mock_size.return_value = TEST_DEVICE_SIZE_100MB  # 100MB for quick test
+        mock_size.return_value = TEST_DEVICE_SIZE_100MB
 
-        # Mock random data
-        mock_urandom.return_value = b'test_data' * 1000
-
-        # Mock time for pretest and wiping
-        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,
-                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,
-                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,
-                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,
-                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]
-
-        # Mock file operations
+        mock_time.return_value = 1000.0
         mock_file.return_value.__enter__.return_value.seek = MagicMock()
         mock_file.return_value.__enter__.return_value.write = MagicMock()
         mock_file.return_value.__enter__.return_value.flush = MagicMock()
         mock_file.return_value.__enter__.return_value.fileno.return_value = 1
 
-        # Mock pretest results that recommend adaptive_chunk
         mock_pretest_results = {
             'analysis': {
                 'recommended_algorithm': 'adaptive_chunk',
                 'average_speed': 50.0,
                 'speed_variance': 30.0
             },
-            'measurements': {
-                'beginning': {'speed': 60.0, 'duration': 0.1},
-                'middle': {'speed': 50.0, 'duration': 0.1},
-                'end': {'speed': 40.0, 'duration': 0.1}
-            }
+            'recommended_algorithm': 'adaptive_chunk'
         }
 
         with patch('os.fsync'):
@@ -701,53 +684,38 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                 with patch('wipeit.DeviceDetector.detect_type',
                            return_value=('HDD', 'HIGH', ['rotational=1'])):
                     with patch('sys.stdout', new_callable=StringIO):
-                        # Mock user input to proceed with wipe
-                        with patch('builtins.input', return_value='y'):
-                            # This should NOT raise the 'float' object error
-                            try:
-                                wipeit.wipe_device('/dev/sdb',
-                                                   TEST_DEVICE_SIZE_100MB,
-                                                   skip_pretest=False)
-                            except TypeError as e:
-                                err_str = ("'float' object cannot be "
-                                           "interpreted as an integer")
-                                if err_str in str(e):
-                                    self.fail("CRITICAL BUG: float to int "
-                                              "conversion error occurred")
-                                else:
-                                    raise
+                        try:
+                            wipeit.wipe_device('/dev/sdb',
+                                               TEST_CHUNK_SIZE_100MB,
+                                               skip_pretest=False)
+                        except TypeError as e:
+                            err_str = ("'float' object cannot be "
+                                       "interpreted as an integer")
+                            if err_str in str(e):
+                                self.fail("CRITICAL BUG: float to int "
+                                          "conversion error occurred")
+                            else:
+                                raise
 
     @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
-    @patch('os.urandom')
     @patch('time.time')
-    def test_adaptive_chunk_sizing_calculations(self, mock_time, mock_urandom,
-                                                mock_file, mock_size):
+    def test_adaptive_chunk_sizing_calculations(self, mock_time, mock_file,
+                                                mock_size):
         """Test that adaptive chunk sizing produces integers."""
-        # Mock device size
-        mock_size.return_value = 100 * 1024 * 1024  # 100MB
+        mock_size.return_value = 100 * 1024 * 1024
 
-        # Mock random data
-        mock_urandom.return_value = b'test_data' * 1000
-
-        # Mock time - provide enough values for the entire test
-        mock_time.side_effect = [0, 0.1, 0.1, 0.5, 0.5, 1.0,
-                                 1.0, 1.1, 1.1, 1.2, 1.2, 1.3,
-                                 1.3, 1.4, 1.4, 1.5, 1.5, 1.6,
-                                 1.6, 1.7, 1.7, 1.8, 1.8, 1.9,
-                                 1.9, 2.0, 2.0, 2.1, 2.1, 2.2]
-
-        # Mock file operations
+        mock_time.return_value = 1000.0
         mock_file.return_value.__enter__.return_value.seek = MagicMock()
         mock_file.return_value.__enter__.return_value.write = MagicMock()
         mock_file.return_value.__enter__.return_value.flush = MagicMock()
         mock_file.return_value.__enter__.return_value.fileno.return_value = 1
 
-        # Mock pretest results
         mock_pretest_results = {
             'analysis': {
                 'recommended_algorithm': 'adaptive_chunk'
-            }
+            },
+            'recommended_algorithm': 'adaptive_chunk'
         }
 
         with patch('os.fsync'):
@@ -756,17 +724,6 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                 with patch('wipeit.DeviceDetector.detect_type',
                            return_value=('HDD', 'HIGH', ['rotational=1'])):
                     with patch('sys.stdout', new_callable=StringIO):
-                        # Test that os.urandom receives integers
-                        original_urandom = os.urandom
-                        urandom_calls = []
-
-                        def mock_urandom(size):
-                            urandom_calls.append(size)
-                            # Verify size is an integer
-                            self.assertIsInstance(size, int)
-                            return original_urandom(min(size, 1024))
-
-                        # Mock the file write method to capture chunk sizes
                         write_calls = []
                         original_write = (mock_file.return_value
                                           .__enter__.return_value.write)
@@ -778,13 +735,10 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                         (mock_file.return_value.__enter__.return_value
                          .write) = mock_write
 
-                        # Mock user input to proceed with wipe
-                        with patch('builtins.input', return_value='y'):
-                            wipeit.wipe_device('/dev/sdb',
-                                               TEST_DEVICE_SIZE_100MB,
-                                               skip_pretest=False)
+                        wipeit.wipe_device('/dev/sdb',
+                                           TEST_CHUNK_SIZE_100MB,
+                                           skip_pretest=False)
 
-                        # Verify we made write calls with integer chunk sizes
                         self.assertGreater(len(write_calls), 0)
                         for size in write_calls:
                             self.assertIsInstance(size, int)

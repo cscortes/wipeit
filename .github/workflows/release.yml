@@ -20,15 +20,15 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install build twine
+        pip install build twine coverage[toml] flake8 isort
 
     - name: Run tests before release
       run: |
-        python test_wipeit.py
+        make tests
 
     - name: Build package
       run: |
-        python -m build
+        make build
 
     - name: Check package
       run: |

@@ -108,9 +108,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install build twine
 
-    - name: Build package
+    - name: Build package with make
       run: |
-        python -m build
+        make build
 
     - name: Check package
       run: |

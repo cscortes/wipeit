@@ -3,7 +3,7 @@
 # This Makefile provides targets for building, testing, and maintaining
 # the wipeit project according to the programming style guide.
 
-.PHONY: info tests lint pre-git-prep security reports help
+.PHONY: info tests lint pre-git-prep security reports build help
 
 # Default target - show help information
 info: help
@@ -48,6 +48,12 @@ help:
 	@echo "                   - Creates backup files (.bak) for safety"
 	@echo "                   - Use to clean AI-generated content artifacts"
 	@echo ""
+	@echo "  build          - Build distribution packages (wheel and source tarball)"
+	@echo "                   - Cleans previous builds in dist/ directory"
+	@echo "                   - Creates wheel (.whl) for pip installation"
+	@echo "                   - Creates source distribution (.tar.gz)"
+	@echo "                   - Displays created packages with sizes"
+	@echo ""
 	@echo "Usage examples:"
 	@echo "  make           # Show this help"
 	@echo "  make info      # Show this help"
@@ -57,6 +63,7 @@ help:
 	@echo "  make reports   # Generate comprehensive codebase reports"
 	@echo "  make clean_files  # Clean invisible characters from files"
 	@echo "  make pre-git-prep  # Fix code style before committing"
+	@echo "  make build     # Build distribution packages for pip installation"
 
 # Run comprehensive test suite including flake8 style checks
 tests:
@@ -302,3 +309,26 @@ reports:
 	@echo "💡 Use 'make tests' for detailed test results"
 	@echo "💡 Use 'make security' for focused security analysis"
 	@echo "💡 Use 'make lint' for detailed style analysis"
+
+# Build distribution packages (wheel and source tarball)
+build:
+	@echo "Building distribution packages..."
+	@echo ""
+	@echo "=== Cleaning Previous Builds ==="
+	@rm -rf dist/ build/ src/*.egg-info
+	@echo "Removed old build artifacts"
+	@echo ""
+	@echo "=== Building Wheel and Source Distribution ==="
+	@python3 -m build
+	@echo ""
+	@echo "=== Build Complete ==="
+	@echo "Created packages in dist/:"
+	@ls -lh dist/ | tail -n +2 | awk '{printf "  %-40s %10s\n", $$9, $$5}'
+	@echo ""
+	@echo "✅ Distribution packages built successfully!"
+	@echo ""
+	@echo "To install locally:"
+	@echo "  pip install dist/wipeit-$$(grep '^version' pyproject.toml | cut -d'"' -f2)-py3-none-any.whl"
+	@echo ""
+	@echo "To upload to PyPI (requires credentials):"
+	@echo "  python3 -m twine upload dist/*"

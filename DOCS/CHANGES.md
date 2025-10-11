@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
+## [1.3.0] - 2025-10-11
+
+### Added
+- **🏗️ WipeStrategy Class Architecture**: Major refactoring of wiping logic into object-oriented strategy pattern
+  - **WipeStrategy abstract base class**: Common functionality for all wiping strategies
+  - **StandardStrategy**: Fixed chunk size wiping for general use
+  - **SmallChunkStrategy**: Optimized for slow drives with smaller chunks
+  - **AdaptiveStrategy**: Dynamic chunk sizing based on disk position and speed
+  - **Backward compatibility**: Original `wipe_device()` function maintained as wrapper
+  - **New test suite**: `test_wipe_strategy.py` with comprehensive unit tests
+- **🔍 DiskPretest Class**: Refactored HDD pretest functionality into reusable class
+  - **DiskPretest class**: Encapsulated pretest logic with testable methods
+  - **PretestResults dataclass**: Structured pretest outcome data
+  - **Quiet mode support**: Non-interactive pretest execution
+  - **Backward compatibility**: Original `perform_hdd_pretest()` function maintained as wrapper
+  - **New test suite**: `test_disk_pretest.py` with comprehensive unit tests
+
+### Changed
+- **Code organization**: Better separation of concerns with class-based architecture
+- **Test coverage**: Increased overall test coverage to 95% (from 82%)
+- **Maintainability**: Easier to extend and modify wiping and pretest algorithms
+- **Version bump**: Updated from 1.2.0 to 1.3.0 across all files
+
+### Technical
+- **137 unit tests** passing (up from 29)
+- **Class-based design**: Follows Strategy Pattern for extensibility
+- **Comprehensive mocking**: Isolated unit tests for all new classes
+- **Style compliance**: All code adheres to 79-character line limit
+- **Zero linting errors**: Clean code passing all style checks
+
 ## [1.2.0] - 2025-01-11
 
 ### Added

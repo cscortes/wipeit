@@ -38,11 +38,11 @@ The wipeit project uses GitHub Actions for:
 
 **Features**:
 - Tests on Python 3.8, 3.9, 3.10, 3.11, 3.12
-- Unit tests with coverage
+- Unit tests with coverage using `make tests`
 - Import sorting checks (isort)
-- Linting (flake8)
-- Security scanning (bandit, safety)
-- Package building and validation
+- Linting with `make lint`
+- Security scanning with `make security` (bandit, safety)
+- Package building with `make build` and validation
 
 **Duration**: ~5-7 minutes
 
@@ -52,8 +52,8 @@ The wipeit project uses GitHub Actions for:
 **Purpose**: Automated package publishing
 
 **Features**:
-- Pre-release testing
-- Package building
+- Pre-release testing with `make tests`
+- Package building with `make build`
 - PyPI publishing
 - GitHub release creation
 - Changelog integration
@@ -91,7 +91,16 @@ The wipeit project uses GitHub Actions for:
 
 ### Test Execution
 ```bash
-# Run all tests
+# Run all tests with make (recommended)
+make tests
+
+# Run linting only
+make lint
+
+# Run security scans
+make security
+
+# Or run tests directly
 python3 test_wipeit.py
 
 # Run with verbose output
@@ -138,6 +147,9 @@ make lint
 
 # Run security scans
 make security
+
+# Build distribution packages
+make build
 ```
 
 ### Manual Testing
@@ -178,10 +190,21 @@ python3 -c "from wipeit import parse_size; print(parse_size('1G'))"
 - `coverage`: Test coverage
 - `flake8`: Linting
 - `isort`: Import sorting
+- `autopep8`: Code formatting
 - `bandit`: Security scanning
 - `safety`: Dependency scanning
 - `build`: Package building
 - `twine`: Package publishing
+
+### Makefile Targets
+The project uses Makefile targets for consistency across local and CI environments:
+- `make tests`: Run comprehensive test suite with coverage and style checks
+- `make lint`: Run only linting checks
+- `make security`: Run security scans (bandit and safety)
+- `make pre-git-prep`: Auto-fix code formatting issues
+- `make build`: Build distribution packages (wheel and source tarball)
+- `make clean_files`: Clean invisible characters from files
+- `make reports`: Generate comprehensive codebase statistics
 
 ## Monitoring
 

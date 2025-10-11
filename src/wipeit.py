@@ -14,19 +14,22 @@ import sys
 import time
 
 from device_detector import DeviceDetector
+from disk_pretest import DiskPretest
 from global_constants import (
     DEFAULT_CHUNK_SIZE,
     DISPLAY_LINE_WIDTH,
-    GB_MILESTONE_THRESHOLD,
     GIGABYTE,
-    HIGH_VARIANCE_THRESHOLD_MBPS,
-    LOW_SPEED_THRESHOLD_MBPS,
     MAX_SIZE_BYTES,
     MAX_SMALL_CHUNK_SIZE,
     MEGABYTE,
     MIN_SIZE_BYTES,
     PROGRESS_FILE_EXPIRY_SECONDS,
     TERABYTE,
+)
+from wipe_strategy import (
+    AdaptiveStrategy,
+    SmallChunkStrategy,
+    StandardStrategy,
 )
 
 
@@ -83,9 +86,10 @@ def get_block_device_size(device):
 
 def perform_hdd_pretest(device, chunk_size=DEFAULT_CHUNK_SIZE):
     """
-    Perform pretest on HDD to measure write speeds at different positions.
+    Perform HDD pretest (WRAPPER for backward compatibility).
 
-    This helps determine the optimal wiping algorithm for the device.
+    This function maintained for backward compatibility.
+    New code should use DiskPretest class directly.
 
     Args:
         device: Path to block device
@@ -94,86 +98,13 @@ def perform_hdd_pretest(device, chunk_size=DEFAULT_CHUNK_SIZE):
     Returns:
         dict: Pretest results with speed measurements and recommendations
     """
-    try:
-        size = get_block_device_size(device)
-        print("=" * 50)
-        print("HDD PRETEST")
-        print("=" * 50)
-        print("• Performing HDD pretest to optimize wiping algorithm...")
-        print("  This will test write speeds at different disk positions.")
-        print("  WARNING: This will write test data to the disk!")
-        print(f"• Disk size: {size / (1024**3):.2f} GB")
-        print(f"• Test chunk size: {chunk_size / (1024**2):.0f} MB")
+    pretest = DiskPretest(device, chunk_size)
+    results = pretest.run_pretest()
 
-        # Test positions: beginning, middle, end
-        test_positions = [
-            (0, "beginning"),
-            (size // 2, "middle"),
-            (size - chunk_size, "end")
-        ]
-
-        print(f"• Test positions: {len(test_positions)} locations")
-
-        speeds = []
-        for position, name in test_positions:
-            print(f"• Testing {name} of disk...")
-            start_time = time.time()
-
-            # Write test data
-            with open(device, 'wb') as f:
-                f.seek(position)
-                f.write(b'\x00' * chunk_size)
-                f.flush()
-                os.fsync(f.fileno())
-
-            end_time = time.time()
-            duration = end_time - start_time
-            speed = chunk_size / duration / MEGABYTE  # MB/s
-            speeds.append(speed)
-
-            print(f"    • {name.capitalize()}: {speed:.2f} MB/s")
-
-        # Analyze results
-        avg_speed = sum(speeds) / len(speeds)
-        speed_variance = max(speeds) - min(speeds)
-
-        print("\n" + "=" * 50)
-        print("PRETEST ANALYSIS")
-        print("=" * 50)
-        print(f"• Average speed: {avg_speed:.2f} MB/s")
-        print(f"• Speed variance: {speed_variance:.2f} MB/s")
-
-        # Determine recommended algorithm
-        if speed_variance > HIGH_VARIANCE_THRESHOLD_MBPS:  # High variance
-            algorithm = "adaptive_chunk"
-            reason = ("High speed variance detected - "
-                      "adaptive chunk sizing recommended")
-        elif avg_speed < LOW_SPEED_THRESHOLD_MBPS:  # Low average speed
-            algorithm = "small_chunk"
-            reason = ("Low average speed - "
-                      "small chunks for better responsiveness")
-        else:
-            algorithm = "standard"
-            reason = "Consistent performance - standard algorithm recommended"
-
-        print(f"• Recommended algorithm: {algorithm}")
-        print(f"• Reason: {reason}")
-
-        return {
-            'speeds': speeds,
-            'average_speed': avg_speed,
-            'speed_variance': speed_variance,
-            'analysis': {
-                'recommended_algorithm': algorithm,
-                'reason': reason
-            },
-            'recommended_algorithm': algorithm,
-            'reason': reason
-        }
-
-    except Exception as e:
-        print(f"Pretest failed: {e}")
+    if results is None:
         return None
+
+    return results.to_dict()
 
 
 def get_progress_file(device):
@@ -301,14 +232,29 @@ def display_resume_info():
 
 def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
                 skip_pretest=False):
-    written = 0  # Initialize written at function start
+    """
+    Wipe device using appropriate strategy (WRAPPER).
+
+    This function maintained for backward compatibility.
+    New code should use WipeStrategy classes directly.
+
+    Args:
+        device: Path to block device
+        chunk_size: Base chunk size for wiping
+        resume: Whether to resume previous session
+        skip_pretest: Whether to skip HDD pretest
+
+    Raises:
+        KeyboardInterrupt: If user interrupts the wipe
+        Exception: On I/O or other errors
+    """
+    written = 0
     size = 0
     start_time = time.time()
     pretest_results = None
 
     try:
         size = get_block_device_size(device)
-        start_time = time.time()
 
         detector = DeviceDetector(device)
         disk_type, confidence, details = detector.detect_type()
@@ -350,7 +296,6 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
                 else:
                     print("Pretest failed, using standard algorithm")
 
-        # Determine algorithm based on pretest results
         if pretest_results:
             algorithm = pretest_results.get(
                 'recommended_algorithm', 'standard')
@@ -359,128 +304,40 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             algorithm = "standard"
             print(f"🎯 Using {algorithm} algorithm")
 
-        # Adaptive chunk sizing for HDDs
-        if algorithm == "adaptive_chunk" and disk_type == "HDD":
+        def progress_callback(written_bytes, total_bytes, chunk_bytes):
+            """Callback for saving progress from strategy."""
+            save_progress(device, written_bytes, total_bytes, chunk_bytes,
+                          pretest_results)
+
+        if algorithm == "adaptive_chunk":
             print("🔄 Using adaptive chunk sizing for optimal performance")
-            current_chunk_size = chunk_size
-            speed_samples = []
+            strategy = AdaptiveStrategy(
+                device, size, chunk_size, written, pretest_results,
+                progress_callback
+            )
+        elif algorithm == "small_chunk":
+            chunk_mb = min(chunk_size, MAX_SMALL_CHUNK_SIZE) / MEGABYTE
+            print(f"🔄 Using small chunk size: {chunk_mb:.0f} MB")
+            strategy = SmallChunkStrategy(
+                device, size, chunk_size, written, pretest_results,
+                progress_callback
+            )
+        else:
+            strategy = StandardStrategy(
+                device, size, chunk_size, written, pretest_results,
+                progress_callback
+            )
 
-            while written < size:
-                # Calculate position-based chunk size
-                position_ratio = written / size
-                if position_ratio < 0.1:  # Beginning - fast
-                    current_chunk_size = int(chunk_size * 2)
-                elif position_ratio > 0.9:  # End - slow
-                    current_chunk_size = int(chunk_size * 0.5)
-                else:  # Middle - adaptive
-                    if len(speed_samples) > 0:
-                        avg_speed = sum(
-                            speed_samples[-5:]) / len(speed_samples[-5:])
-                        if avg_speed < 50:  # Slow
-                            current_chunk_size = int(chunk_size * 0.5)
-                        elif avg_speed > 200:  # Fast
-                            current_chunk_size = int(chunk_size * 1.5)
-                        else:
-                            current_chunk_size = chunk_size
-                    else:
-                        current_chunk_size = chunk_size
+        strategy.wipe()
+        written = strategy.written
 
-                # Ensure chunk size is within bounds
-                current_chunk_size = max(
-                    MEGABYTE, min(current_chunk_size, size - written))
-
-                # Write chunk
-                chunk_start_time = time.time()
-                with open(device, 'wb') as f:
-                    f.seek(written)
-                    f.write(b'\x00' * current_chunk_size)
-                    f.flush()
-                    os.fsync(f.fileno())
-
-                chunk_end_time = time.time()
-                chunk_duration = chunk_end_time - chunk_start_time
-                chunk_speed = current_chunk_size / \
-                    chunk_duration / MEGABYTE
-                speed_samples.append(chunk_speed)
-
-                written += current_chunk_size
-
-                # Progress display
-                progress_percent = (written / size) * 100
-                elapsed_time = time.time() - start_time
-                if written > 0:
-                    eta = (size - written) / (written / elapsed_time)
-                    hours = int(eta // 3600)
-                    minutes = int((eta % 3600) // 60)
-                    seconds = int(eta % 60)
-                    eta_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-                else:
-                    eta_str = "??:??:??"
-
-                # Visual progress bar
-                bar_length = 50
-                filled_length = int(bar_length * written // size)
-                bar = '█' * filled_length + '░' * (bar_length - filled_length)
-
-                print(f"\r• Progress: {progress_percent:.1f}% |{bar}| "
-                      f"{written / (1024**3):.1f}GB/"
-                      f"{size / (1024**3):.1f}GB ETA: {eta_str} "
-                      f"Speed: {chunk_speed:.1f}MB/s", end='', flush=True)
-
-                # Save progress every 1GB
-                if written % GB_MILESTONE_THRESHOLD == 0:
-                    save_progress(device, written, size, chunk_size,
-                                  pretest_results)
-
-        else:  # Standard or small chunk algorithm
-            if algorithm == "small_chunk":
-                chunk_size = min(chunk_size, MAX_SMALL_CHUNK_SIZE)  # Max 10MB
-                chunk_mb = chunk_size / MEGABYTE
-                print(f"🔄 Using small chunk size: {chunk_mb:.0f} MB")
-
-            while written < size:
-                current_chunk_size = min(chunk_size, size - written)
-
-                with open(device, 'wb') as f:
-                    f.seek(written)
-                    f.write(b'\x00' * current_chunk_size)
-                    f.flush()
-                    os.fsync(f.fileno())
-
-                written += current_chunk_size
-
-                # Progress display
-                progress_percent = (written / size) * 100
-                elapsed_time = time.time() - start_time
-                if written > 0:
-                    eta = (size - written) / (written / elapsed_time)
-                    hours = int(eta // 3600)
-                    minutes = int((eta % 3600) // 60)
-                    seconds = int(eta % 60)
-                    eta_str = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-                else:
-                    eta_str = "??:??:??"
-
-                # Visual progress bar
-                bar_length = 50
-                filled_length = int(bar_length * written // size)
-                bar = '█' * filled_length + '░' * (bar_length - filled_length)
-
-                print(f"\r• Progress: {progress_percent:.1f}% |{bar}| "
-                      f"{written / (1024**3):.1f}GB/"
-                      f"{size / (1024**3):.1f}GB ETA: {eta_str}",
-                      end='', flush=True)
-
-                # Save progress every 1GB
-                if written % GB_MILESTONE_THRESHOLD == 0:
-                    save_progress(device, written, size, chunk_size,
-                                  pretest_results)
-
-        print()  # New line after progress bar
         clear_progress(device)
 
         total_time = time.time() - start_time
-        avg_speed = size / total_time / MEGABYTE
+        if total_time > 0:
+            avg_speed = size / total_time / MEGABYTE
+        else:
+            avg_speed = 0
 
         print("\n" + "=" * 50)
         print("WIPE COMPLETED")
@@ -536,7 +393,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.2.0')
+        version='wipeit 1.3.0')
 
     args = parser.parse_args()
 
