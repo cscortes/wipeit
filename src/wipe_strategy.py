@@ -50,7 +50,13 @@ class WipeStrategy(ABC):
         self.start_time = time.time()
         self.pretest_results = pretest_results
         self.progress_callback = progress_callback
-        self.last_milestone = 0  # Track last shown milestone for finish time
+        # Calculate last milestone based on start position for resume support
+        if total_size > 0:
+            current_percent = (start_position / total_size) * 100
+            self.last_milestone = int(current_percent) // \
+                MILESTONE_INCREMENT_PERCENT * MILESTONE_INCREMENT_PERCENT
+        else:
+            self.last_milestone = 0
 
     @abstractmethod
     def wipe(self):

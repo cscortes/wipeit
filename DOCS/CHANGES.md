@@ -13,20 +13,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Estimated finish time display**: Restored feature that shows actual clock time (e.g., "3:15 PM") at 5% progress milestones (lost during WipeStrategy refactoring)
+- **Resume milestone bug**: Fixed bug where milestones were repeated when resuming a wipe. Now correctly calculates last_milestone based on resume position (e.g., resuming at 47% starts at milestone 45, next shown is 50%)
 
 ### Added
-- **Milestone test coverage**: Added 6 comprehensive test cases for estimated finish time feature:
+- **Milestone test coverage**: Added 8 comprehensive test cases for estimated finish time feature:
   - `test_milestone_tracking`: Verifies milestones are tracked at 5% intervals
   - `test_milestone_not_shown_twice`: Ensures same milestone doesn't show twice
   - `test_milestone_increments_correctly`: Tests all 5% milestones (5%, 10%, 15%, etc.)
   - `test_estimated_finish_time_format`: Validates time format ("%I:%M %p")
   - `test_milestone_display_all_strategies`: Tests milestone display across StandardStrategy, SmallChunkStrategy, and AdaptiveStrategy
   - `test_milestone_uniqueness_all_strategies`: Verifies no duplicate milestones across all strategies
+  - `test_milestone_initialization_on_resume`: Tests last_milestone calculation for various resume positions (0%, 12%, 47%, 5%, 99%)
+  - `test_milestone_not_repeated_after_resume`: Verifies milestones aren't repeated when resuming from previous position
 
 ### Changed
-- **Test count**: Increased to 143 unit tests (up from 137)
-- **Test coverage**: test_wipe_strategy.py now has 748 lines (was 303)
+- **Test count**: Increased to 145 unit tests (up from 137)
+- **Test coverage**: test_wipe_strategy.py now has 833 lines (was 303)
 - **Cross-strategy validation**: Milestone feature now verified on all three wiping strategies
+- **Resume functionality**: Milestone tracking now properly resumes from last completed milestone
 
 ## [1.3.0] - 2025-10-11
 

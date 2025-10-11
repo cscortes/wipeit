@@ -208,6 +208,89 @@ class TestWipeStrategyBase(unittest.TestCase):
         mock_strftime.assert_called_with(
             "%I:%M %p", mock_localtime.return_value)
 
+    def test_milestone_initialization_on_resume(self):
+        """Test that last_milestone is set correctly when resuming."""
+        device_size = 1000 * MEGABYTE
+
+        # Test resume from 0%
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, 0)
+        self.assertEqual(
+            strategy.last_milestone, 0,
+            "Resuming from 0% should start at milestone 0")
+
+        # Test resume from 12% (should be at milestone 10)
+        start_pos = int(device_size * 0.12)
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, start_pos)
+        self.assertEqual(
+            strategy.last_milestone, 10,
+            "Resuming from 12% should start at milestone 10")
+
+        # Test resume from 47% (should be at milestone 45)
+        start_pos = int(device_size * 0.47)
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, start_pos)
+        self.assertEqual(
+            strategy.last_milestone, 45,
+            "Resuming from 47% should start at milestone 45")
+
+        # Test resume from 5% exactly (should be at milestone 5)
+        start_pos = int(device_size * 0.05)
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, start_pos)
+        self.assertEqual(
+            strategy.last_milestone, 5,
+            "Resuming from 5% should start at milestone 5")
+
+        # Test resume from 99% (should be at milestone 95)
+        start_pos = int(device_size * 0.99)
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, start_pos)
+        self.assertEqual(
+            strategy.last_milestone, 95,
+            "Resuming from 99% should start at milestone 95")
+
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    @patch('builtins.print')
+    def test_milestone_not_repeated_after_resume(
+            self, mock_print, mock_time, mock_localtime, mock_strftime):
+        """Test that milestones aren't repeated after resume."""
+        device_size = 1000 * MEGABYTE
+        mock_time.return_value = 1000.0
+        mock_strftime.return_value = "03:15 PM"
+
+        # Resume from 47% (last_milestone should be 45)
+        start_pos = int(device_size * 0.47)
+        strategy = StandardStrategy('/dev/sdb', device_size,
+                                    100 * MEGABYTE, start_pos)
+        strategy.start_time = 900.0
+
+        # Should not show 45% milestone (already passed)
+        mock_print.reset_mock()
+        strategy.written = int(device_size * 0.47)
+        strategy._display_progress()
+        calls = [str(call) for call in mock_print.call_args_list]
+        finish_time_shown = any("Estimated Finish Time" in str(call)
+                                for call in calls)
+        self.assertFalse(
+            finish_time_shown,
+            "Should not show milestone 45 when resuming at 47%")
+
+        # Should show 50% milestone (next new milestone)
+        mock_print.reset_mock()
+        strategy.written = int(device_size * 0.50)
+        strategy._display_progress()
+        calls = [str(call) for call in mock_print.call_args_list]
+        finish_time_shown = any("Estimated Finish Time" in str(call)
+                                for call in calls)
+        self.assertTrue(
+            finish_time_shown,
+            "Should show milestone 50 when reaching it")
+        self.assertEqual(strategy.last_milestone, 50)
+
 
 class TestStandardStrategy(unittest.TestCase):
     """Test StandardStrategy class."""
