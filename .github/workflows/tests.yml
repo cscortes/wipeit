@@ -41,12 +41,12 @@ jobs:
 
     - name: Generate coverage XML for Codecov
       run: |
-        coverage xml
+        cd src && coverage xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage.xml
+        file: ./src/coverage.xml
         flags: unittests
         name: codecov-umbrella
         fail_ci_if_error: false
@@ -89,8 +89,8 @@ jobs:
 
     - name: Run bandit security scan
       run: |
-        bandit -r . -c bandit.yaml -f json -o bandit-report.json || true
-        bandit -r . -c bandit.yaml -f txt
+        bandit -r src/ --ini .bandit -f json -o bandit-report.json || true
+        bandit -r src/ --ini .bandit -f txt
 
     - name: Run safety scan
       run: |
