@@ -42,7 +42,8 @@ uv.lock
 Thumbs.db
 
 .coverage
-wipeit_progress_sdb.json
 
+#
 src/coverage.xml
-wipeit_progress_sda.json
+wipeit_progress.json
+wipeit_progress.json
