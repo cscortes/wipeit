@@ -47,7 +47,7 @@ jobs:
         ls -la coverage.xml || echo "No coverage.xml file found"
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       with:
         file: ./src/coverage.xml
         flags: unittests
