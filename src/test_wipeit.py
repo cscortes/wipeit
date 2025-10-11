@@ -459,6 +459,100 @@ class TestIntegration(unittest.TestCase):
         if os.path.exists(self.test_progress_file):
             os.remove(self.test_progress_file)
 
+    @patch('sys.argv', ['wipeit.py', '/dev/sdb'])
+    @patch('os.geteuid', return_value=0)
+    @patch('os.path.exists', return_value=True)
+    @patch('builtins.input', return_value='n')
+    @patch('wipeit.DeviceDetector')
+    @patch('wipeit.load_progress', return_value=None)
+    @patch('wipeit.clear_progress')
+    @patch('sys.exit')
+    def test_main_shows_resume_prompt_when_progress_exists(
+            self, mock_exit, mock_clear_progress, mock_load_progress,
+            mock_detector_class, mock_input, mock_path_exists, mock_geteuid):
+        """Test that main() displays resume info when progress file exists.
+
+        This is a critical user-facing feature: when starting wipeit with
+        a device argument, if a progress file exists, the user should see:
+        1. RESUME OPTIONS section with details
+        2. "Use --resume flag to continue" message
+        """
+        # Create real progress file
+        test_data = {
+            'device': '/dev/sdb',
+            'written': 500 * 1024 * 1024 * 1024,  # 500GB
+            'total_size': 1000 * 1024 * 1024 * 1024,  # 1TB
+            'chunk_size': 100 * 1024 * 1024,
+            'timestamp': time.time(),
+            'progress_percent': 50.0
+        }
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(test_data, f)
+
+        # Mock DeviceDetector
+        mock_detector = MagicMock()
+        mock_detector.is_mounted.return_value = (False, [])
+        mock_detector_class.return_value = mock_detector
+
+        # Capture output
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            wipeit.main()
+
+        output = mock_stdout.getvalue()
+
+        # CRITICAL CHECKS: Verify user sees resume information
+        self.assertIn(
+            'RESUME OPTIONS', output,
+            "User should see RESUME OPTIONS header")
+        self.assertIn(
+            'Found previous wipe sessions', output,
+            "User should see message about previous sessions")
+        self.assertIn(
+            '/dev/sdb', output,
+            "User should see device name in resume info")
+        self.assertIn(
+            '50.00% complete', output,
+            "User should see progress percentage")
+        self.assertIn(
+            '500.00 GB / 1000.00 GB', output,
+            "User should see written/total GB")
+        self.assertIn(
+            'Use --resume flag to continue', output,
+            "User should see instruction to use --resume flag")
+
+    @patch('sys.argv', ['wipeit.py', '/dev/sdb'])
+    @patch('os.geteuid', return_value=0)
+    @patch('os.path.exists', return_value=True)
+    @patch('builtins.input', return_value='n')
+    @patch('wipeit.DeviceDetector')
+    @patch('wipeit.load_progress', return_value=None)
+    @patch('wipeit.clear_progress')
+    @patch('sys.exit')
+    def test_main_no_resume_prompt_when_no_progress(
+            self, mock_exit, mock_clear_progress, mock_load_progress,
+            mock_detector_class, mock_input, mock_path_exists, mock_geteuid):
+        """Test main() doesn't show resume info when no progress exists."""
+        # NO progress file created
+
+        # Mock DeviceDetector
+        mock_detector = MagicMock()
+        mock_detector.is_mounted.return_value = (False, [])
+        mock_detector_class.return_value = mock_detector
+
+        # Capture output
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            wipeit.main()
+
+        output = mock_stdout.getvalue()
+
+        # Should NOT see resume messages
+        self.assertNotIn(
+            'RESUME OPTIONS', output,
+            "Should not see RESUME OPTIONS when no progress")
+        self.assertNotIn(
+            'Use --resume flag to continue', output,
+            "Should not see resume instruction when no progress")
+
     def test_progress_workflow(self):
         """Test the complete progress save/load/clear workflow."""
         device = '/dev/test'

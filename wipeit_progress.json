@@ -1,0 +1,23 @@
+{
+  "device": "/dev/sdb",
+  "written": 0,
+  "total_size": 320072933376,
+  "progress_percent": 0.0,
+  "chunk_size": 104857600,
+  "timestamp": 1760220658.8201365,
+  "pretest_results": {
+    "speeds": [
+      54.57295787153306,
+      47.056695842919666,
+      33.397243199268594
+    ],
+    "average_speed": 45.0089656379071,
+    "speed_variance": 21.17571467226447,
+    "analysis": {
+      "recommended_algorithm": "small_chunk",
+      "reason": "Low average speed - small chunks for better responsiveness"
+    },
+    "recommended_algorithm": "small_chunk",
+    "reason": "Low average speed - small chunks for better responsiveness"
+  }
+}
