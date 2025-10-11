@@ -43,16 +43,16 @@ Example:
 class DeviceDetector:
     def __init__(self, device_path):
         """Initialize detector."""
-        
+
     def get_size(self):
         """Public method - get device size."""
-        
+
     def detect_type(self):
         """Public method - detect device type."""
-        
+
     def _check_rotational(self):
         """Private helper - check rotation."""
-        
+
     def _analyze_indicators(self):
         """Private helper - analyze indicators."""
 ```
@@ -69,7 +69,7 @@ Example:
 def __init__(self, device_path):
     """
     Initialize device detector.
-    
+
     Args:
         device_path: Path to block device (e.g., '/dev/sdb')
     """
@@ -91,13 +91,13 @@ Example:
 def detect_type(self):
     """
     Detect storage device type (HDD/SSD/NVMe).
-    
+
     Returns:
         tuple: (disk_type, confidence_level, detection_details)
             - disk_type: str like "HDD", "SSD", "NVMe SSD"
             - confidence_level: str like "HIGH", "MEDIUM", "LOW"
             - detection_details: list of detection method strings
-    
+
     Raises:
         OSError: If device cannot be accessed
     """
@@ -155,7 +155,7 @@ Example:
 def __init__(self, device_path):
     self.device_path = device_path      # Core state
     self._cached_size = None            # Cached computation
-    
+
 def get_size(self):
     """Get size with caching."""
     if self._cached_size is None:
@@ -165,27 +165,51 @@ def get_size(self):
 
 ### Testing Classes
 
-Each class should have a dedicated test class:
-- Test class name: `Test<ClassName>` (e.g., TestDeviceDetector)
+Each class should have a dedicated test class in a separate test file:
+- **Test file naming**: `test_<class_name>.py` (e.g., `test_device_detector.py`)
+- **Test class name**: `Test<ClassName>` (e.g., TestDeviceDetector)
+- **One test file per class**: Each class gets its own dedicated test file
 - Test each public method
 - Test edge cases and error conditions
 - Mock external dependencies (file system, subprocess calls)
 
-Example:
+Example file structure:
+```
+src/
+├── device_detector.py       # DeviceDetector class
+├── test_device_detector.py  # DeviceDetector tests
+├── wipeit.py               # Main functions
+├── test_wipeit.py          # Function tests
+└── test_wipeit.py          # Legacy combined tests (to be split)
+```
+
+Example test file (`test_device_detector.py`):
 ```python
+import unittest
+from unittest.mock import patch, MagicMock
+from device_detector import DeviceDetector
+
 class TestDeviceDetector(unittest.TestCase):
     """Test DeviceDetector class."""
-    
+
     def test_init(self):
         """Test initialization."""
-        
+
     def test_get_size(self):
         """Test size detection."""
-        
+
     @patch('subprocess.check_output')
     def test_detect_type_ssd(self, mock_subprocess):
         """Test SSD detection."""
 ```
+
+### Test File Organization
+
+- **Separate test files**: Each class should have its own test file
+- **Test file naming**: `test_<module_name>.py` for classes, `test_<function_module>.py` for function modules
+- **Test discovery**: All test files should be discoverable by unittest
+- **Import organization**: Import the class/module being tested at the top
+- **Test isolation**: Each test file should be independently runnable
 
 ### When to Use Classes vs Functions
 
@@ -201,6 +225,59 @@ Use functions when:
 - Utility/helper operations
 - Operating on multiple different objects
 
+### File Organization
+
+- **One file per class**: Each class should be in its own file
+- **File naming**: Use snake_case for file names (e.g., `device_detector.py`)
+- **Class naming**: Use PascalCase for class names (e.g., `DeviceDetector`)
+- **Package structure**: Organize classes in logical packages under `src/`
+
+Example structure:
+```
+src/
+├── __init__.py
+├── global_constants.py      # All application constants
+├── device_detector.py       # DeviceDetector class
+├── progress_manager.py      # ProgressManager class (future)
+└── wipeit.py               # Main functions and CLI
+```
+
+### Constants and Global Variables
+
+- **Constants file**: All application constants should be defined in `global_constants.py`
+- **Naming convention**: Use ALL_CAPS with underscores for constant names
+- **Organization**: Group related constants together with descriptive comments
+- **Import usage**: Import constants from `global_constants` module
+
+Example constants file:
+```python
+# Size multipliers
+KILOBYTE = 1024
+MEGABYTE = 1024 * 1024
+GIGABYTE = 1024 * 1024 * 1024
+
+# Default values
+DEFAULT_CHUNK_SIZE = 100 * MEGABYTE
+PROGRESS_FILE_EXPIRY_SECONDS = 24 * 3600
+
+# Thresholds
+LOW_SPEED_THRESHOLD_MBPS = 50
+```
+
+Usage in code:
+```python
+from global_constants import MEGABYTE, DEFAULT_CHUNK_SIZE
+
+def parse_size(size_str):
+    return int(size_str) * MEGABYTE
+```
+
+**Benefits:**
+- Centralized constant management
+- Easy to find and update values
+- Prevents magic numbers throughout code
+- Improves code readability and maintainability
+
 ### Backward Compatibility
 
 When refactoring functions to classes:
@@ -214,7 +291,7 @@ Example:
 def get_device_info(device):
     """
     Get device information (DEPRECATED - use DeviceDetector).
-    
+
     This function is maintained for backward compatibility.
     New code should use: DeviceDetector(device).display_info()
     """

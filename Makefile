@@ -3,7 +3,7 @@
 # This Makefile provides targets for building, testing, and maintaining
 # the wipeit project according to the programming style guide.
 
-.PHONY: info tests lint pre-git-prep security help
+.PHONY: info tests lint pre-git-prep security reports help
 
 # Default target - show help information
 info: help
@@ -35,6 +35,13 @@ help:
 	@echo "                   - Safety: Checks for known vulnerabilities in dependencies"
 	@echo "                   - Ensures code security best practices"
 	@echo ""
+	@echo "  reports        - Generate comprehensive codebase statistics and reports"
+	@echo "                   - Code coverage analysis with detailed metrics"
+	@echo "                   - Security analysis (bandit + safety)"
+	@echo "                   - Code metrics (lines of code, files, complexity)"
+	@echo "                   - Import analysis and dependency information"
+	@echo "                   - Performance and quality metrics"
+	@echo ""
 	@echo "  clean_files    - Clean invisible characters from all relevant files"
 	@echo "                   - Removes problematic invisible characters from code/docs"
 	@echo "                   - Processes Python, Markdown, YAML, JSON, and other text files"
@@ -47,6 +54,7 @@ help:
 	@echo "  make tests     # Run all tests and style checks"
 	@echo "  make lint      # Run only style checks"
 	@echo "  make security  # Run security scans"
+	@echo "  make reports   # Generate comprehensive codebase reports"
 	@echo "  make clean_files  # Clean invisible characters from files"
 	@echo "  make pre-git-prep  # Fix code style before committing"
 
@@ -55,18 +63,24 @@ tests:
 	@echo "Running comprehensive test suite..."
 	@echo ""
 	@echo "=== Running Unit Tests with Coverage ==="
-	@python3 -m coverage run test_wipeit.py
-	@python3 -m coverage report --show-missing
+	@cd src && python3 -m coverage run -m unittest discover -s . -p "test_*.py"
+	@cd src && python3 -m coverage report --show-missing
 	@echo ""
 	@echo "=== Running Import Sorting Check (isort) ==="
 	@echo "Checking import order..."
-	@python3 -m isort --check-only --diff wipeit.py test_wipeit.py
+	@python3 -m isort --check-only --diff src/wipeit.py src/device_detector.py src/test_wipeit.py src/test_device_detector.py
 	@echo ""
 	@echo "=== Running Style Checks (flake8) ==="
-	@echo "Checking wipeit.py..."
-	@python3 -m flake8 wipeit.py --max-line-length=79 --count
-	@echo "Checking test_wipeit.py..."
-	@python3 -m flake8 test_wipeit.py --max-line-length=79 --count
+	@echo "Checking src/wipeit.py..."
+	@python3 -m flake8 src/wipeit.py --max-line-length=79 --count
+	@echo "Checking src/device_detector.py..."
+	@python3 -m flake8 src/device_detector.py --max-line-length=79 --count
+	@echo "Checking src/test_wipeit.py..."
+	@python3 -m flake8 src/test_wipeit.py --max-line-length=79 --count
+	@echo "Checking src/test_device_detector.py..."
+	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
+	@echo "Checking src/test_device_detector.py..."
+	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
 	@echo ""
 	@echo "=== Test Summary ==="
 	@echo "All tests completed successfully!"
@@ -79,10 +93,14 @@ tests:
 lint:
 	@echo "Running flake8 style checks..."
 	@echo ""
-	@echo "=== Checking wipeit.py ==="
-	@python3 -m flake8 wipeit.py --max-line-length=79 --count
-	@echo "=== Checking test_wipeit.py ==="
-	@python3 -m flake8 test_wipeit.py --max-line-length=79 --count
+	@echo "=== Checking src/wipeit.py ==="
+	@python3 -m flake8 src/wipeit.py --max-line-length=79 --count
+	@echo "=== Checking src/device_detector.py ==="
+	@python3 -m flake8 src/device_detector.py --max-line-length=79 --count
+	@echo "=== Checking src/test_wipeit.py ==="
+	@python3 -m flake8 src/test_wipeit.py --max-line-length=79 --count
+	@echo "=== Checking src/test_device_detector.py ==="
+	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
 	@echo ""
 	@echo "✅ Style checks passed - no line length violations found"
 
@@ -91,16 +109,24 @@ pre-git-prep:
 	@echo "Preparing code for git commit..."
 	@echo ""
 	@echo "=== Running autopep8 to fix line length issues ==="
-	@echo "Fixing wipeit.py..."
-	@python3 -m autopep8 --max-line-length=79 --in-place wipeit.py
-	@echo "Fixing test_wipeit.py..."
-	@python3 -m autopep8 --max-line-length=79 --in-place test_wipeit.py
+	@echo "Fixing src/wipeit.py..."
+	@python3 -m autopep8 --max-line-length=79 --in-place src/wipeit.py
+	@echo "Fixing src/device_detector.py..."
+	@python3 -m autopep8 --max-line-length=79 --in-place src/device_detector.py
+	@echo "Fixing src/test_wipeit.py..."
+	@python3 -m autopep8 --max-line-length=79 --in-place src/test_wipeit.py
+	@echo "Fixing src/test_device_detector.py..."
+	@python3 -m autopep8 --max-line-length=79 --in-place src/test_device_detector.py
 	@echo ""
 	@echo "=== Verifying fixes with flake8 ==="
-	@echo "Checking wipeit.py..."
-	@python3 -m flake8 wipeit.py --max-line-length=79 --count
-	@echo "Checking test_wipeit.py..."
-	@python3 -m flake8 test_wipeit.py --max-line-length=79 --count
+	@echo "Checking src/wipeit.py..."
+	@python3 -m flake8 src/wipeit.py --max-line-length=79 --count
+	@echo "Checking src/device_detector.py..."
+	@python3 -m flake8 src/device_detector.py --max-line-length=79 --count
+	@echo "Checking src/test_wipeit.py..."
+	@python3 -m flake8 src/test_wipeit.py --max-line-length=79 --count
+	@echo "Checking src/test_device_detector.py..."
+	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
 	@echo ""
 	@echo "✅ Code prepared for git commit - all style issues fixed"
 	@echo "💡 Future: This target may include additional pre-commit tasks"
@@ -130,3 +156,149 @@ clean_files:
 	@echo ""
 	@echo "✅ Invisible character cleaning completed"
 	@echo "💡 Backup files (.bak) created for safety"
+
+# Generate comprehensive codebase statistics and reports
+reports:
+	@echo "Generating comprehensive codebase reports..."
+	@echo ""
+	@echo "=========================================="
+	@echo "📊 CODEBASE STATISTICS REPORT"
+	@echo "=========================================="
+	@echo ""
+	@echo "=== 📁 FILE STRUCTURE ANALYSIS ==="
+	@echo "Total files in project:"
+	@find . -type f -not -path "./.git/*" -not -path "./__pycache__/*" -not -path "./.pytest_cache/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l
+	@echo ""
+	@echo "Python source files:"
+	@find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l
+	@echo ""
+	@echo "Documentation files:"
+	@find . -name "*.md" -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l
+	@echo ""
+	@echo "Configuration files:"
+	@find . -name "*.toml" -o -name "*.json" -o -name "*.yaml" -o -name "*.yml" -o -name "Makefile" -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l
+	@echo ""
+	@echo "=== 📏 CODE METRICS ==="
+	@echo "Total lines of code (Python):"
+	@find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" -not -path "./.venv/*" -not -path "./venv/*" -exec wc -l {} + | tail -1
+	@echo ""
+	@echo "Lines of code by file:"
+	@find . -name "*.py" -not -path "./.git/*" -not -path "./__pycache__/*" -not -path "./.venv/*" -not -path "./venv/*" -exec wc -l {} + | sort -nr
+	@echo ""
+	@echo "Total lines of documentation:"
+	@find . -name "*.md" -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" -exec wc -l {} + | tail -1
+	@echo ""
+	@echo "=== 🧪 CODE COVERAGE ANALYSIS ==="
+	@echo "Running tests with coverage..."
+	@cd src && python3 -m coverage run -m unittest discover -s . -p "test_*.py" > /dev/null 2>&1
+	@cd src && python3 -m coverage report --show-missing
+	@echo ""
+	@echo "Coverage summary:"
+	@cd src && python3 -m coverage report --show-missing | tail -1
+	@echo ""
+	@echo "=== 🔒 SECURITY ANALYSIS ==="
+	@echo "Running Bandit security scan..."
+	@python3 -m bandit -r . -c .bandit -f txt -ll 2>/dev/null || echo "⚠️  Bandit scan completed (see output above for any issues)"
+	@echo ""
+	@echo "Running Safety dependency check..."
+	@python3 -m safety scan 2>/dev/null || echo "⚠️  Safety scan completed (see output above for any issues)"
+	@echo ""
+	@echo "=== 📦 DEPENDENCY ANALYSIS ==="
+	@echo "Runtime dependencies:"
+	@if [ -f "pyproject.toml" ]; then \
+		echo "Main project dependencies:"; \
+		if awk '/^dependencies = \[/,/^\]/ {if (/^dependencies = \[/) next; if (/^\]/) exit; if (/^\s*"[a-zA-Z]/) print}' pyproject.toml > /dev/null 2>&1; then \
+			awk '/^dependencies = \[/,/^\]/ {if (/^dependencies = \[/) next; if (/^\]/) exit; if (/^\s*"[a-zA-Z]/) print}' pyproject.toml | sed 's/^[[:space:]]*//' | sed 's/,$$//'; \
+		else \
+			echo "  (No runtime dependencies - uses Python standard library only)"; \
+		fi; \
+		echo ""; \
+		echo "Development dependencies:"; \
+		if awk '/^dev-dependencies = \[/,/^\]/ {if (/^dev-dependencies = \[/) next; if (/^\]/) exit; if (/^\s*"[a-zA-Z]/) print}' pyproject.toml > /dev/null 2>&1; then \
+			awk '/^dev-dependencies = \[/,/^\]/ {if (/^dev-dependencies = \[/) next; if (/^\]/) exit; if (/^\s*"[a-zA-Z]/) print}' pyproject.toml | sed 's/^[[:space:]]*//' | sed 's/,$$//' | sed 's/^/  /'; \
+		else \
+			echo "  (No development dependencies found)"; \
+		fi; \
+		echo ""; \
+		echo "Build system dependencies:"; \
+		if grep "^requires = \[" pyproject.toml | grep -E '"[a-zA-Z]' > /dev/null; then \
+			grep "^requires = \[" pyproject.toml | sed 's/.*\[//' | sed 's/\].*//' | sed 's/"//g' | sed 's/^/  /'; \
+		else \
+			echo "  (No build system dependencies found)"; \
+		fi; \
+	else \
+		echo "No pyproject.toml found"; \
+	fi
+	@echo ""
+	@echo "=== 🎯 CODE QUALITY METRICS ==="
+	@echo "Running style checks..."
+	@echo "Flake8 violations:"
+	@python3 -m flake8 src/ --max-line-length=79 --count --statistics 2>/dev/null || echo "Style check completed"
+	@echo ""
+	@echo "Import sorting status:"
+	@python3 -m isort --check-only --diff src/wipeit.py src/device_detector.py src/test_wipeit.py src/test_device_detector.py 2>/dev/null && echo "✅ Imports are properly sorted" || echo "⚠️  Import sorting issues found"
+	@echo ""
+	@echo "=== 🏗️  PROJECT STRUCTURE ==="
+	@echo "Main source files:"
+	@ls -la src/*.py 2>/dev/null | awk '{print $$9, $$5}' | column -t
+	@echo ""
+	@echo "Test files:"
+	@ls -la src/test_*.py 2>/dev/null | awk '{print $$9, $$5}' | column -t
+	@echo ""
+	@echo "Documentation files:"
+	@ls -la DOCS/*.md 2>/dev/null | awk '{print $$9, $$5}' | column -t
+	@echo ""
+	@echo "=== 📈 COMPLEXITY ANALYSIS ==="
+	@echo "Function and class counts:"
+	@echo "Classes:"
+	@total_class_count=$$(grep -r "^class " src/ --include="*.py" | wc -l); \
+	echo "  Total: $$total_class_count"; \
+	test_class_count=$$(grep -r "^class Test" src/ --include="*.py" | wc -l); \
+	codebase_class_count=$$(grep -r "^class " src/ --include="*.py" | grep -v ":class Test" | wc -l); \
+	echo "  Codebase classes: $$codebase_class_count"; \
+	if [ $$codebase_class_count -gt 0 ]; then \
+		echo "  Codebase class names:"; \
+		grep -r "^class " src/ --include="*.py" | grep -v ":class Test" | sed 's/^[^:]*:class /    /' | sed 's/(.*//' | sed 's/:.*//'; \
+	fi; \
+	echo "  Test classes: $$test_class_count"; \
+	if [ $$test_class_count -gt 0 ]; then \
+		echo "  Test class names:"; \
+		grep -r "^class Test" src/ --include="*.py" | sed 's/^[^:]*:class /    /' | sed 's/(.*//' | sed 's/:.*//'; \
+	fi
+	@echo ""
+	@echo "Functions:"
+	@total_func_count=$$(grep -r "^def " src/ --include="*.py" | wc -l); \
+	echo "  Total: $$total_func_count"; \
+	codebase_func_count=$$(grep -r "^def " src/ --include="*.py" | grep -v ":def test_" | wc -l); \
+	test_func_count=$$(grep -r "def test_" src/ --include="*.py" | wc -l); \
+	echo "  Codebase functions: $$codebase_func_count"; \
+	if [ $$codebase_func_count -gt 0 ]; then \
+		echo "  Codebase function names:"; \
+		grep -r "^def " src/ --include="*.py" | grep -v ":def test_" | sed 's/^[^:]*:def /    /' | sed 's/(.*//' | sed 's/:.*//'; \
+	fi; \
+	echo "  Test functions: $$test_func_count"; \
+	if [ $$test_func_count -gt 0 ]; then \
+		echo "  Test function names (first 10):"; \
+		grep -r "def test_" src/ --include="*.py" | sed 's/^[^:]*:.*def /    /' | sed 's/(.*//' | sed 's/:.*//' | head -10; \
+		if [ $$test_func_count -gt 10 ]; then \
+			echo "    ... and $$((test_func_count - 10)) more"; \
+		fi; \
+	fi
+	@echo ""
+	@echo "=== 🎨 CODE STYLE SUMMARY ==="
+	@echo "Longest lines (>79 chars):"
+	@find src/ -name "*.py" -not -path "./.venv/*" -not -path "./venv/*" -exec awk 'length($$0) > 79 {print FILENAME ":" NR ": " $$0}' {} \; | head -5
+	@echo ""
+	@echo "=== 📋 REPORT SUMMARY ==="
+	@echo "✅ Codebase analysis completed"
+	@echo "📊 Reports generated for:"
+	@echo "   - File structure and metrics"
+	@echo "   - Code coverage analysis"
+	@echo "   - Security assessment"
+	@echo "   - Dependency analysis"
+	@echo "   - Code quality metrics"
+	@echo "   - Project structure overview"
+	@echo ""
+	@echo "💡 Use 'make tests' for detailed test results"
+	@echo "💡 Use 'make security' for focused security analysis"
+	@echo "💡 Use 'make lint' for detailed style analysis"

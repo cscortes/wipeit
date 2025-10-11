@@ -9,6 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
+## [1.2.0] - 2025-01-11
+
+### Added
+- **📊 Comprehensive Codebase Reports**: New `make reports` target providing detailed project statistics
+  - **File structure analysis**: Total files, Python files, documentation, configuration files
+  - **Code metrics**: Lines of code, documentation lines, file sizes
+  - **Code coverage analysis**: Detailed coverage reports with missing line information
+  - **Security analysis**: Bandit security scan and Safety dependency vulnerability check
+  - **Dependency analysis**: Runtime, development, and build system dependencies from pyproject.toml
+  - **Complexity analysis**: Class and function counts with names (codebase vs test separation)
+  - **Code style summary**: Longest lines detection and style compliance
+  - **Virtual environment exclusion**: Properly excludes .venv and venv directories from analysis
+- **Enhanced Makefile**: Improved help system with detailed target descriptions and usage examples
+- **Professional terminology**: Updated reports to use "codebase" instead of "non-test" for clarity
+
+### Changed
+- **Version bump**: Updated from 1.1.0 to 1.2.0 across all files
+- **Documentation updates**: Updated README, TESTDESIGN.md, and CHANGES.md with new version references
+- **Code style improvements**: Enhanced Makefile formatting and organization
+
+### Fixed
+- **Bandit configuration**: Resolved .bandit file parsing issues for security scans
+- **Report accuracy**: Fixed dependency parsing and class/function name extraction in reports
+- **Virtual environment handling**: Properly excluded virtual environment code from codebase analysis
+
 ## [1.1.0] - 2025-01-27
 
 ### Added

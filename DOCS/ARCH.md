@@ -10,10 +10,27 @@ This document provides an overview of the wipeit codebase architecture, showing 
 
 ### Architecture Overview
 
-The wipeit codebase follows a hybrid architecture combining:
-- **Object-Oriented Design**: New `DeviceDetector` class for device operations
+The wipeit codebase follows a modern, modular architecture with:
+- **Source Package Structure**: All source code organized under `src/wipeit/`
+- **One File Per Class**: Each class in its own dedicated file
+- **Object-Oriented Design**: `DeviceDetector` class for device operations
 - **Procedural Functions**: Legacy functions maintained for backward compatibility
-- **Modular Structure**: Clear separation between device detection, progress management, and core wiping
+- **Clear Separation**: Device detection, wiping operations, and CLI interface separated
+
+### File Structure
+
+```
+src/
+├── __init__.py                    # Package initialization
+├── device_detector.py            # DeviceDetector class (1 file per class)
+└── wipeit.py                     # Main functions and CLI interface
+```
+
+**Key Design Principles:**
+- **One File Per Class**: Each class gets its own dedicated file
+- **Package Organization**: Logical grouping under `src/`
+- **Clear Imports**: Explicit imports in `__init__.py` files
+- **Separation of Concerns**: Device detection separate from main logic
 
 ### Class-Based Architecture (New)
 
@@ -21,7 +38,7 @@ The wipeit codebase follows a hybrid architecture combining:
 graph TD
     %% DeviceDetector Class
     DeviceDetector["DeviceDetector Class<br/>Encapsulates all device operations"]
-    
+
     %% Public Methods
     get_size["get_size()<br/>Get device size in bytes"]
     get_device_properties["get_device_properties()<br/>Get udev properties"]
@@ -29,7 +46,7 @@ graph TD
     is_mounted["is_mounted()<br/>Check mount status"]
     get_partitions["get_partitions()<br/>Get partition information"]
     display_info["display_info()<br/>Display comprehensive device info"]
-    
+
     %% Private Helper Methods
     _check_rotational["_check_rotational()<br/>Check if device is rotational"]
     _check_nvme_interface["_check_nvme_interface()<br/>Check NVMe interface"]
@@ -42,7 +59,7 @@ graph TD
     _display_type_info["_display_type_info()<br/>Display type information"]
     _display_partition_info["_display_partition_info()<br/>Display partitions"]
     _display_mount_status["_display_mount_status()<br/>Display mount status"]
-    
+
     %% Class relationships
     DeviceDetector --> get_size
     DeviceDetector --> get_device_properties
@@ -50,29 +67,29 @@ graph TD
     DeviceDetector --> is_mounted
     DeviceDetector --> get_partitions
     DeviceDetector --> display_info
-    
+
     %% detect_type calls
     detect_type --> _check_rotational
     detect_type --> _check_nvme_interface
     detect_type --> _check_mmc_interface
     detect_type --> _analyze_rpm_indicators
     detect_type --> _determine_type
-    
+
     %% _determine_type calls
     _determine_type --> _detect_from_model_name
-    
+
     %% display_info calls
     display_info --> _display_header
     display_info --> _display_basic_info
     display_info --> _display_type_info
     display_info --> _display_partition_info
     display_info --> _display_mount_status
-    
+
     %% Styling
     classDef classNode fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef publicMethod fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef privateMethod fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    
+
     class DeviceDetector classNode
     class get_size,get_device_properties,detect_type,is_mounted,get_partitions,display_info publicMethod
     class _check_rotational,_check_nvme_interface,_check_mmc_interface,_analyze_rpm_indicators,_detect_from_model_name,_determine_type,_display_header,_display_basic_info,_display_type_info,_display_partition_info,_display_mount_status privateMethod
@@ -87,7 +104,7 @@ graph TD
 
     %% DeviceDetector Class (New)
     DeviceDetector["DeviceDetector Class<br/>Object-oriented device operations"]
-    
+
     %% Legacy Functions (Backward Compatibility)
     get_device_info["get_device_info(device)<br/>DEPRECATED - Use DeviceDetector"]
     detect_disk_type["detect_disk_type(device)<br/>DEPRECATED - Use DeviceDetector"]

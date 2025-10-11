@@ -1,6 +1,6 @@
 [project]
 name = "wipeit"
-version = "1.1.0"
+version = "1.2.0"
 description = "A secure device wiping utility that overwrites block devices with random data"
 authors = [
     {name = "Luis Cortes", email = "mrluiscortes@gmail.com"}
@@ -26,7 +26,7 @@ classifiers = [
 ]
 
 [project.scripts]
-wipeit = "wipeit:main"
+wipeit = "src.wipeit:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -71,7 +71,7 @@ exclude = [
 ]
 
 [tool.coverage.run]
-source = ["wipeit"]
+source = ["src"]
 omit = [
     "test_wipeit.py",
     "*/tests/*",

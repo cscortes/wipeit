@@ -499,7 +499,7 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v1.1.0+)
+### Current Test Coverage (v1.2.0+)
 - **Total Test Classes**: 10
 - **Total Test Cases**: 75
 - **Test Coverage Breakdown**:
@@ -562,7 +562,7 @@ The new `TestDeviceDetector` class provides comprehensive coverage of the object
 
 This test design document provides comprehensive coverage for all wipeit features. It should be updated whenever new features are added to ensure complete test coverage and maintainability.
 
-### Recent Updates (v1.1.0+)
+### Recent Updates (v1.2.0+)
 - Added comprehensive test coverage for HDD pretest functionality
 - Added critical bug test for float-to-integer conversion in adaptive chunk sizing
 - Increased test count from 34 to 40 tests

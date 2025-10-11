@@ -54,7 +54,7 @@ A secure device wiping utility that overwrites block devices with random data.
 # Install from PyPI (when published)
 uv pip install wipeit
 
-# Or install from source
+# Or install from source (new src/ structure)
 git clone <repository-url>
 cd wipeit
 uv sync
@@ -429,7 +429,7 @@ wipeit -v
 **Example output:**
 ```bash
 $ wipeit --version
-wipeit 1.1.0
+wipeit 1.2.0
 ```
 
 ### Resume functionality
