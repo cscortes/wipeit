@@ -44,3 +44,4 @@ Thumbs.db
 .coverage
 wipeit_progress_sdb.json
 
+src/coverage.xml
