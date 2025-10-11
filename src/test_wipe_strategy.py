@@ -829,6 +829,62 @@ class TestStrategyIntegration(unittest.TestCase):
                     f"{strategy.__class__.__name__} should not "
                     f"show finish time twice for same milestone")
 
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    @patch('builtins.print')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.fsync')
+    def test_resume_milestone_integration(
+            self, mock_fsync, mock_file, mock_print, mock_time,
+            mock_localtime, mock_strftime):
+        """Integration test: Resume at 47% should only show new milestones.
+
+        This test simulates the exact user scenario:
+        1. Start wipe, reach 47%
+        2. Stop (Ctrl+C)
+        3. Resume from 47%
+        4. Should NOT see milestones 5%, 10%, 15%, 20%, 25%, 30%, 35%, 40%, 45%
+        5. SHOULD see milestone 50% when reached
+        """
+        device_size = 1000 * MEGABYTE
+        chunk_size = 50 * MEGABYTE
+        mock_strftime.return_value = "03:15 PM"
+        mock_file_handle = mock_file.return_value.__enter__.return_value
+        mock_file_handle.fileno.return_value = 3
+
+        # Simulate resume from 47% (after interruption)
+        resume_position = int(device_size * 0.47)  # 47%
+        strategy = StandardStrategy('/dev/sdb', device_size, chunk_size,
+                                    resume_position)
+
+        # Verify last_milestone was set to 45 (not 0)
+        self.assertEqual(
+            strategy.last_milestone, 45,
+            "Bug: last_milestone should be 45 when resuming at 47%, not 0!")
+
+        mock_time.side_effect = [1000.0 + i * 0.1 for i in range(100)]
+        strategy.start_time = 900.0
+
+        # Simulate progress from 47% to 52%
+        milestones_shown = []
+        for progress_pct in [47, 48, 49, 50, 51, 52]:
+            mock_print.reset_mock()
+            strategy.written = int(device_size * (progress_pct / 100.0))
+            strategy._display_progress()
+
+            # Check if milestone was shown
+            calls = [str(call) for call in mock_print.call_args_list]
+            if any("Estimated Finish Time" in str(call) for call in calls):
+                milestones_shown.append(progress_pct)
+
+        # Only 50% should have triggered a milestone (not 5, 10, 15, etc.)
+        self.assertEqual(
+            milestones_shown, [50],
+            f"Bug: Should only show milestone 50%, "
+            f"but showed: {milestones_shown}. "
+            f"This means old milestones were repeated!")
+
 
 if __name__ == '__main__':
     test_suite = unittest.TestSuite()
