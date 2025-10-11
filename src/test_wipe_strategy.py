@@ -104,6 +104,110 @@ class TestWipeStrategyBase(unittest.TestCase):
 
         strategy._save_progress_checkpoint()
 
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    @patch('builtins.print')
+    def test_milestone_tracking(self, mock_print, mock_time,
+                                mock_localtime, mock_strftime):
+        """Test that milestones are tracked at 5% intervals."""
+        strategy = StandardStrategy('/dev/sdb', 1000 * MEGABYTE,
+                                    100 * MEGABYTE, 0)
+        mock_time.return_value = 1000.0
+        strategy.start_time = 900.0  # 100 seconds elapsed
+        mock_strftime.return_value = "03:15 PM"
+
+        # Test 5% milestone
+        strategy.written = 50 * MEGABYTE  # 5%
+        strategy._display_progress()
+        self.assertEqual(strategy.last_milestone, 5)
+
+        # Verify estimated finish time was printed
+        calls = [str(call) for call in mock_print.call_args_list]
+        finish_time_shown = any("Estimated Finish Time" in str(call)
+                                for call in calls)
+        self.assertTrue(
+            finish_time_shown,
+            "Estimated finish time should be shown at milestone")
+
+    @patch('time.strftime')
+    @patch('time.time')
+    @patch('builtins.print')
+    def test_milestone_not_shown_twice(self, mock_print, mock_time,
+                                       mock_strftime):
+        """Test that same milestone is not shown twice."""
+        strategy = StandardStrategy('/dev/sdb', 1000 * MEGABYTE,
+                                    100 * MEGABYTE, 0)
+        mock_time.return_value = 1000.0
+        strategy.start_time = 900.0
+        mock_strftime.return_value = "03:15 PM"
+
+        # Show 10% milestone
+        strategy.written = 100 * MEGABYTE  # 10%
+        strategy._display_progress()
+
+        # Try to show 10% again (should not show finish time)
+        mock_print.reset_mock()
+        strategy.written = 105 * MEGABYTE  # Still 10%
+        strategy._display_progress()
+
+        # Should not show estimated finish time again
+        calls = [str(call) for call in mock_print.call_args_list]
+        finish_time_shown = any("Estimated Finish Time" in str(call)
+                                for call in calls)
+        self.assertFalse(
+            finish_time_shown,
+            "Should not show finish time for same milestone")
+
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    @patch('builtins.print')
+    def test_milestone_increments_correctly(
+            self, mock_print, mock_time, mock_localtime, mock_strftime):
+        """Test that milestones increment at each 5% mark."""
+        strategy = StandardStrategy('/dev/sdb', 1000 * MEGABYTE,
+                                    100 * MEGABYTE, 0)
+        mock_time.return_value = 1000.0
+        strategy.start_time = 900.0
+        mock_strftime.return_value = "03:15 PM"
+
+        milestones = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+        for milestone in milestones:
+            mock_print.reset_mock()
+            strategy.written = milestone * 10 * MEGABYTE  # milestone%
+            strategy._display_progress()
+            self.assertEqual(strategy.last_milestone, milestone)
+
+            # Each milestone should show finish time
+            calls = [str(call) for call in mock_print.call_args_list]
+            finish_time_shown = any("Estimated Finish Time" in str(call)
+                                    for call in calls)
+            self.assertTrue(
+                finish_time_shown,
+                f"Should show finish time at {milestone}% milestone")
+
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    def test_estimated_finish_time_format(self, mock_time,
+                                          mock_localtime, mock_strftime):
+        """Test estimated finish time formatting."""
+        strategy = StandardStrategy('/dev/sdb', 1000 * MEGABYTE,
+                                    100 * MEGABYTE, 0)
+        current_time = 1640000000.0
+        mock_time.return_value = current_time
+        strategy.start_time = current_time - 100  # 100 seconds elapsed
+        mock_strftime.return_value = "07:45 PM"
+
+        with patch('builtins.print'):
+            strategy.written = 50 * MEGABYTE  # 5%
+            strategy._display_progress()
+
+        # Verify strftime was called with correct format
+        mock_strftime.assert_called_with(
+            "%I:%M %p", mock_localtime.return_value)
+
 
 class TestStandardStrategy(unittest.TestCase):
     """Test StandardStrategy class."""

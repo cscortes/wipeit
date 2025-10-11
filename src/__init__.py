@@ -5,4 +5,4 @@ This package provides secure device wiping functionality with comprehensive
 device detection, mount safety checks, and progress tracking.
 """
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"

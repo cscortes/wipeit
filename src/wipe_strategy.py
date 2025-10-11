@@ -17,6 +17,7 @@ from global_constants import (
     GIGABYTE,
     MAX_SMALL_CHUNK_SIZE,
     MEGABYTE,
+    MILESTONE_INCREMENT_PERCENT,
 )
 
 
@@ -49,6 +50,7 @@ class WipeStrategy(ABC):
         self.start_time = time.time()
         self.pretest_results = pretest_results
         self.progress_callback = progress_callback
+        self.last_milestone = 0  # Track last shown milestone for finish time
 
     @abstractmethod
     def wipe(self):
@@ -123,6 +125,24 @@ class WipeStrategy(ABC):
               f"{self.written / GIGABYTE:.1f}GB/"
               f"{self.total_size / GIGABYTE:.1f}GB ETA: {eta_str}"
               f"{speed_str}", end='', flush=True)
+
+        # Display estimated finish time at 5% milestones
+        current_milestone = int(progress_percent) // \
+            MILESTONE_INCREMENT_PERCENT * MILESTONE_INCREMENT_PERCENT
+        if (current_milestone > self.last_milestone and
+                current_milestone % MILESTONE_INCREMENT_PERCENT == 0 and
+                self.written > 0):
+            self.last_milestone = current_milestone
+            # Calculate estimated finish time
+            elapsed_time = time.time() - self.start_time
+            if elapsed_time > 0:
+                eta_seconds = (self.total_size - self.written) / \
+                             (self.written / elapsed_time)
+                estimated_finish = time.time() + eta_seconds
+                finish_time_str = time.strftime(
+                    "%I:%M %p", time.localtime(estimated_finish))
+                print(f"\n• Estimated Finish Time: {finish_time_str}",
+                      flush=True)
 
     def _save_progress_checkpoint(self):
         """

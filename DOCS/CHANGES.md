@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
+## [1.3.1] - 2025-10-11
+
+### Fixed
+- **Estimated finish time display**: Restored feature that shows actual clock time (e.g., "3:15 PM") at 5% progress milestones (lost during WipeStrategy refactoring)
+
+### Added
+- **Milestone test coverage**: Added 4 comprehensive test cases for estimated finish time feature:
+  - `test_milestone_tracking`: Verifies milestones are tracked at 5% intervals
+  - `test_milestone_not_shown_twice`: Ensures same milestone doesn't show twice
+  - `test_milestone_increments_correctly`: Tests all 5% milestones (5%, 10%, 15%, etc.)
+  - `test_estimated_finish_time_format`: Validates time format ("%I:%M %p")
+
+### Changed
+- **Test count**: Increased to 141 unit tests (up from 137)
+- **Test coverage**: test_wipe_strategy.py now has 365 lines (was 303)
+
 ## [1.3.0] - 2025-10-11
 
 ### Added
