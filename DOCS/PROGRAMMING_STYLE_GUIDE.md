@@ -14,6 +14,41 @@ to dev in the TODO.md as a low priority item.
 - make sure we have unittest code coverage for all code.
 - make sure all dependencies for release and debug are being updated in pyproject.toml
 
+## Documentation File Organization
+
+**All documentation files MUST be in the `DOCS/` directory** with the following exception:
+
+### Exception: Root Level Documentation
+- **`README.md`** - ONLY file allowed at project root level
+  - Primary project documentation
+  - First file users see on GitHub
+  - Contains installation, usage, and quick start information
+
+### Mandatory Location: DOCS/ Directory
+All other `.md` files MUST be placed in the `DOCS/` directory, including but not limited to:
+- `CHANGES.md` - Changelog and release notes
+- `ARCH.md` - Architecture documentation
+- `TODO.md` - Task lists and future work
+- `PROGRAMMING_STYLE_GUIDE.md` - This file
+- `TESTDESIGN.md` - Testing approach and strategy
+- `RELEASE_CHECK_LIST.md` - Release process documentation
+- `SAFETY_SETUP.md` - Safety and security setup
+- `PERFORMANCE-GUIDE.md` - Performance optimization guide
+- `CI-CD.md` - Continuous integration documentation
+- Any bug analysis or feature documentation files
+
+### Rationale
+- **Clean root directory**: Keeps project root uncluttered
+- **Organized documentation**: All docs in one place
+- **Easy discovery**: Developers know where to find documentation
+- **Maintainability**: Easier to manage and update documentation
+- **Professional appearance**: Shows well-organized project structure
+
+### Enforcement
+- During code review, any `.md` file (except `README.md`) in the project root should be moved to `DOCS/`
+- Build scripts and CI/CD pipelines may enforce this rule
+- Use `find . -maxdepth 1 -name "*.md" ! -name "README.md"` to check for violations
+
 ## Icon Usage
 
 **Minimize icon usage** - icons should only be used for critical alerts and
