@@ -99,7 +99,7 @@ class TestProgressFileFunctions(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.test_device = '/dev/sdb'
-        self.test_progress_file = 'wipeit_progress_sdb.json'
+        self.test_progress_file = 'wipeit_progress.json'
 
         # Clean up any existing test progress files
         if os.path.exists(self.test_progress_file):
@@ -112,13 +112,14 @@ class TestProgressFileFunctions(unittest.TestCase):
 
     def test_get_progress_file(self):
         """Test progress file path generation."""
+        # Should always return the same filename regardless of device
         result = wipeit.get_progress_file(self.test_device)
-        expected = 'wipeit_progress_sdb.json'
+        expected = 'wipeit_progress.json'
         self.assertEqual(result, expected)
 
-        # Test with different device
+        # Test with different device - should return same filename
         result = wipeit.get_progress_file('/dev/nvme0n1')
-        expected = 'wipeit_progress_nvme0n1.json'
+        expected = 'wipeit_progress.json'
         self.assertEqual(result, expected)
 
     def test_save_progress(self):
@@ -226,21 +227,16 @@ class TestResumeFileFunctions(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.test_progress_files = [
-            'wipeit_progress_sdb.json',
-            'wipeit_progress_sdc.json'
-        ]
+        self.test_progress_file = 'wipeit_progress.json'
 
-        # Clean up any existing test progress files
-        for file in self.test_progress_files:
-            if os.path.exists(file):
-                os.remove(file)
+        # Clean up any existing test progress file
+        if os.path.exists(self.test_progress_file):
+            os.remove(self.test_progress_file)
 
     def tearDown(self):
         """Clean up test environment."""
-        for file in self.test_progress_files:
-            if os.path.exists(file):
-                os.remove(file)
+        if os.path.exists(self.test_progress_file):
+            os.remove(self.test_progress_file)
 
     def test_find_resume_files_empty(self):
         """Test finding resume files when none exist."""
@@ -249,7 +245,7 @@ class TestResumeFileFunctions(unittest.TestCase):
 
     def test_find_resume_files_with_valid_files(self):
         """Test finding resume files with valid files."""
-        # Create test progress files
+        # Create test progress file
         test_data = {
             'device': '/dev/sdb',
             'written': TEST_WRITTEN_1GB,
@@ -259,7 +255,7 @@ class TestResumeFileFunctions(unittest.TestCase):
             'progress_percent': 25.0
         }
 
-        with open('wipeit_progress_sdb.json', 'w') as f:
+        with open(self.test_progress_file, 'w') as f:
             json.dump(test_data, f)
 
         result = wipeit.find_resume_files()
@@ -278,7 +274,7 @@ class TestResumeFileFunctions(unittest.TestCase):
             'progress_percent': 25.0
         }
 
-        with open('wipeit_progress_sdb.json', 'w') as f:
+        with open(self.test_progress_file, 'w') as f:
             json.dump(test_data, f)
 
         result = wipeit.find_resume_files()
@@ -301,7 +297,7 @@ class TestResumeFileFunctions(unittest.TestCase):
             'progress_percent': 25.0
         }
 
-        with open('wipeit_progress_sdb.json', 'w') as f:
+        with open(self.test_progress_file, 'w') as f:
             json.dump(test_data, f)
 
         # Capture output
@@ -454,7 +450,7 @@ class TestIntegration(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.test_progress_file = 'wipeit_progress_test.json'
+        self.test_progress_file = 'wipeit_progress.json'
         if os.path.exists(self.test_progress_file):
             os.remove(self.test_progress_file)
 

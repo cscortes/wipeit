@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
+## [Unreleased]
+
+### Changed
+- **⚠️ BREAKING**: Progress filename is now always `wipeit_progress.json` instead of `wipeit_progress_[device].json`
+  - Simplifies progress tracking with single consistent filename
+  - Note: Only one device can have active progress at a time
+  - Old device-specific progress files will be ignored
+
 ## [1.3.1] - 2025-10-11
 
 ### Fixed
@@ -252,7 +260,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automatic progress saving every 1GB or 10 chunks
   - Graceful interruption handling with Ctrl+C (immediate response)
   - Resume from exact interruption point
-  - Progress files stored in `wipeit_progress_[device].json` (current directory)
+  - Progress file stored as `wipeit_progress.json` (current directory)
   - 24-hour expiry for progress files
   - Immediate write flushing and syncing for responsive interruption
   - Example: `wipeit --resume /dev/sdx`

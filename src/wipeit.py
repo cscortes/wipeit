@@ -108,9 +108,12 @@ def perform_hdd_pretest(device, chunk_size=DEFAULT_CHUNK_SIZE):
 
 
 def get_progress_file(device):
-    """Get the path to the progress file for a device."""
-    device_name = os.path.basename(device)
-    return f"wipeit_progress_{device_name}.json"
+    """Get the path to the progress file.
+
+    Note: Always returns 'wipeit_progress.json' regardless of device.
+    This means only one device can have active progress at a time.
+    """
+    return "wipeit_progress.json"
 
 
 def save_progress(device, written, total_size,
@@ -174,23 +177,21 @@ def clear_progress(device):
 
 
 def find_resume_files():
-    """Find all progress files."""
+    """Find progress file if it exists."""
     progress_files = []
-    try:
-        for filename in os.listdir('.'):
-            if filename.startswith(
-                    'wipeit_progress_') and filename.endswith('.json'):
-                try:
-                    with open(filename, 'r') as f:
-                        progress_data = json.load(f)
-                    # Check if progress is still valid (24 hours)
-                    if (time.time() - progress_data['timestamp'] <=
-                            PROGRESS_FILE_EXPIRY_SECONDS):
-                        progress_files.append(progress_data)
-                except Exception:
-                    pass
-    except Exception:
-        pass
+    progress_file = 'wipeit_progress.json'
+
+    if os.path.exists(progress_file):
+        try:
+            with open(progress_file, 'r') as f:
+                progress_data = json.load(f)
+            # Check if progress is still valid (24 hours)
+            if (time.time() - progress_data['timestamp'] <=
+                    PROGRESS_FILE_EXPIRY_SECONDS):
+                progress_files.append(progress_data)
+        except Exception:
+            pass
+
     return progress_files
 
 

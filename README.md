@@ -436,7 +436,7 @@ wipeit 1.2.0
 
 The tool automatically saves progress and allows resuming interrupted wipes:
 
-- **Progress files** are stored in `wipeit_progress_[device].json` (current directory)
+- **Progress file** is stored as `wipeit_progress.json` (current directory)
 - **Auto-save** occurs every 1GB written or every 10 chunks
 - **Resume detection** when starting a new wipe on a device with existing progress
 - **Progress cleanup** when wipe completes successfully
