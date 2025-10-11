@@ -655,6 +655,97 @@ class TestStrategyIntegration(unittest.TestCase):
                 strategy.wipe()
                 self.assertEqual(strategy.written, device_size)
 
+    @patch('time.strftime')
+    @patch('time.localtime')
+    @patch('time.time')
+    @patch('builtins.print')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('os.fsync')
+    def test_milestone_display_all_strategies(
+            self, mock_fsync, mock_file, mock_print, mock_time,
+            mock_localtime, mock_strftime):
+        """Test that all strategies display milestones correctly."""
+        device_size = 1000 * MEGABYTE
+        chunk_size = 50 * MEGABYTE
+        mock_strftime.return_value = "03:15 PM"
+        mock_file_handle = mock_file.return_value.__enter__.return_value
+        mock_file_handle.fileno.return_value = 3
+
+        strategies = [
+            StandardStrategy('/dev/sdb', device_size, chunk_size, 0),
+            SmallChunkStrategy('/dev/sdb', device_size, chunk_size, 0),
+            AdaptiveStrategy('/dev/sdb', device_size, chunk_size, 0)
+        ]
+
+        for strategy in strategies:
+            with self.subTest(strategy=strategy.__class__.__name__):
+                mock_print.reset_mock()
+                # Set up timing to simulate progress
+                mock_time.side_effect = [1000.0 + i * 0.1
+                                         for i in range(100)]
+                strategy.start_time = 900.0
+
+                # Simulate progress to 10% milestone
+                strategy.written = 100 * MEGABYTE  # 10%
+                strategy._display_progress()
+
+                # Verify milestone was shown
+                calls = [str(call) for call in mock_print.call_args_list]
+                finish_time_shown = any(
+                    "Estimated Finish Time" in str(call)
+                    for call in calls)
+                self.assertTrue(
+                    finish_time_shown,
+                    f"{strategy.__class__.__name__} should show "
+                    f"estimated finish time at milestone")
+
+                # Verify milestone tracking
+                self.assertEqual(
+                    strategy.last_milestone, 10,
+                    f"{strategy.__class__.__name__} should track "
+                    f"milestone at 10%")
+
+    @patch('time.strftime')
+    @patch('time.time')
+    @patch('builtins.print')
+    def test_milestone_uniqueness_all_strategies(
+            self, mock_print, mock_time, mock_strftime):
+        """Test that all strategies don't repeat same milestone."""
+        device_size = 1000 * MEGABYTE
+        chunk_size = 50 * MEGABYTE
+        mock_strftime.return_value = "03:15 PM"
+
+        strategies = [
+            StandardStrategy('/dev/sdb', device_size, chunk_size, 0),
+            SmallChunkStrategy('/dev/sdb', device_size, chunk_size, 0),
+            AdaptiveStrategy('/dev/sdb', device_size, chunk_size, 0)
+        ]
+
+        for strategy in strategies:
+            with self.subTest(strategy=strategy.__class__.__name__):
+                mock_time.return_value = 1000.0
+                strategy.start_time = 900.0
+
+                # Show 15% milestone
+                strategy.written = 150 * MEGABYTE
+                strategy._display_progress()
+                self.assertEqual(strategy.last_milestone, 15)
+
+                # Try to show 15% again
+                mock_print.reset_mock()
+                strategy.written = 155 * MEGABYTE  # Still 15%
+                strategy._display_progress()
+
+                # Should not show finish time again
+                calls = [str(call) for call in mock_print.call_args_list]
+                finish_time_shown = any(
+                    "Estimated Finish Time" in str(call)
+                    for call in calls)
+                self.assertFalse(
+                    finish_time_shown,
+                    f"{strategy.__class__.__name__} should not "
+                    f"show finish time twice for same milestone")
+
 
 if __name__ == '__main__':
     test_suite = unittest.TestSuite()
