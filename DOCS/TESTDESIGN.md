@@ -59,7 +59,17 @@ This document outlines the comprehensive testing strategy for the wipeit secure 
   - Output format validation
   - Error handling for missing devices
 
-#### 1.5 Main Function Tests
+#### 1.5 DeviceDetector Class Tests (New)
+- **`TestDeviceDetector`** - Object-oriented device detection functionality
+  - **Initialization**: Object creation and property setup
+  - **Core Methods**: Size detection, property extraction, type detection, mount checking, partition info
+  - **Private Methods**: Rotational checking, interface detection, RPM analysis, model name detection
+  - **Display Methods**: Header, basic info, type info, partition info, mount status display
+  - **Error Handling**: Comprehensive error scenarios for all methods
+  - **Mocking Strategy**: Subprocess calls, file system operations, device properties
+  - **Edge Cases**: Missing files, invalid data, subprocess failures
+
+#### 1.6 Main Function Tests
 - **`TestMainFunction`** - Command-line interface
   - Help option (`--help`)
   - Version option (`--version`, `-v`)
@@ -489,9 +499,9 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v1.1.0)
-- **Total Test Classes**: 9
-- **Total Test Cases**: 40
+### Current Test Coverage (v1.1.0+)
+- **Total Test Classes**: 10
+- **Total Test Cases**: 75
 - **Test Coverage Breakdown**:
   - `TestParseSize`: 5 tests
   - `TestProgressFileFunctions`: 7 tests
@@ -502,21 +512,64 @@ jobs:
   - `TestHDDPretest`: 3 tests (Added in 0.3.1)
   - `TestWipeDeviceIntegration`: 2 tests (Added in 0.3.1)
   - `TestMountChecking`: 6 tests (Added in 1.1.0)
+  - `TestDeviceDetector`: 35 tests (Added in 1.1.0+)
+
+### DeviceDetector Test Coverage
+The new `TestDeviceDetector` class provides comprehensive coverage of the object-oriented device detection functionality:
+
+#### **Initialization Tests**
+- `test_init()` - Verify proper object initialization
+
+#### **Core Method Tests**
+- `test_get_size()` - Device size detection with success/error cases
+- `test_get_device_properties()` - udev property extraction with success/error cases
+- `test_detect_type()` - Complete device type detection workflow
+- `test_is_mounted()` - Mount status checking (not mounted, device mounted, partitions mounted, error cases)
+- `test_get_partitions()` - Partition information retrieval with success/error cases
+- `test_display_info()` - Complete information display workflow
+
+#### **Private Method Tests**
+- `test_check_rotational_ssd()` - SSD rotational check (returns False)
+- `test_check_rotational_hdd()` - HDD rotational check (returns True)
+- `test_check_rotational_not_found()` - Missing sysfs file handling
+- `test_check_nvme_interface_true/false()` - NVMe interface detection
+- `test_check_mmc_interface_true/false()` - MMC interface detection
+- `test_analyze_rpm_indicators_*()` - RPM indicator analysis (zero RPM, with RPM, NVMe bus)
+- `test_detect_from_model_name_*()` - Model name-based detection (SSD, HDD, unknown)
+- `test_determine_type_*()` - Type determination logic (NVMe, MMC, SSD, HDD, various indicators)
+
+#### **Display Method Tests**
+- `test_display_header()` - Information header display
+- `test_display_basic_info()` - Basic device information display
+- `test_display_type_info()` - Device type information display
+- `test_display_partition_info()` - Partition information display
+- `test_display_mount_status_*()` - Mount status display (mounted/not mounted)
+
+#### **Error Handling Tests**
+- `test_get_size_error()` - Size detection error handling
+- `test_get_device_properties_error()` - Property extraction error handling
+- `test_detect_type_error()` - Type detection error handling
+- `test_is_mounted_error()` - Mount check error handling
+- `test_get_partitions_error()` - Partition info error handling
+- `test_display_info_error()` - Display error handling
 
 ### Code Coverage Goals
 - **Target**: 90%+ code coverage
-- **Critical Paths**: 100% coverage for HDD pretest and adaptive chunk algorithms
-- **Current Status**: All 40 tests passing with 0 linting errors
+- **Critical Paths**: 100% coverage for HDD pretest, adaptive chunk algorithms, and DeviceDetector class
+- **Current Status**: All 75 tests passing with 0 linting errors
 
 ## Conclusion
 
 This test design document provides comprehensive coverage for all wipeit features. It should be updated whenever new features are added to ensure complete test coverage and maintainability.
 
-### Recent Updates (v1.1.0)
+### Recent Updates (v1.1.0+)
 - Added comprehensive test coverage for HDD pretest functionality
 - Added critical bug test for float-to-integer conversion in adaptive chunk sizing
 - Increased test count from 34 to 40 tests
 - Added comprehensive mount checking test coverage (6 new tests)
+- **Added comprehensive DeviceDetector class test coverage (35 new tests)**
+- **Increased total test count from 40 to 75 tests**
+- **Added object-oriented testing patterns and class method coverage**
 - All tests comply with 79-character line length limit
 
 ### Key Principles:

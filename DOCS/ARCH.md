@@ -8,20 +8,94 @@ This document provides an overview of the wipeit codebase architecture, showing 
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
 
-### Function Call Graph
+### Architecture Overview
+
+The wipeit codebase follows a hybrid architecture combining:
+- **Object-Oriented Design**: New `DeviceDetector` class for device operations
+- **Procedural Functions**: Legacy functions maintained for backward compatibility
+- **Modular Structure**: Clear separation between device detection, progress management, and core wiping
+
+### Class-Based Architecture (New)
+
+```mermaid
+graph TD
+    %% DeviceDetector Class
+    DeviceDetector["DeviceDetector Class<br/>Encapsulates all device operations"]
+    
+    %% Public Methods
+    get_size["get_size()<br/>Get device size in bytes"]
+    get_device_properties["get_device_properties()<br/>Get udev properties"]
+    detect_type["detect_type()<br/>Detect HDD/SSD/NVMe/eMMC"]
+    is_mounted["is_mounted()<br/>Check mount status"]
+    get_partitions["get_partitions()<br/>Get partition information"]
+    display_info["display_info()<br/>Display comprehensive device info"]
+    
+    %% Private Helper Methods
+    _check_rotational["_check_rotational()<br/>Check if device is rotational"]
+    _check_nvme_interface["_check_nvme_interface()<br/>Check NVMe interface"]
+    _check_mmc_interface["_check_mmc_interface()<br/>Check MMC interface"]
+    _analyze_rpm_indicators["_analyze_rpm_indicators()<br/>Analyze RPM indicators"]
+    _detect_from_model_name["_detect_from_model_name()<br/>Detect from model name"]
+    _determine_type["_determine_type()<br/>Determine final device type"]
+    _display_header["_display_header()<br/>Display info header"]
+    _display_basic_info["_display_basic_info()<br/>Display basic device info"]
+    _display_type_info["_display_type_info()<br/>Display type information"]
+    _display_partition_info["_display_partition_info()<br/>Display partitions"]
+    _display_mount_status["_display_mount_status()<br/>Display mount status"]
+    
+    %% Class relationships
+    DeviceDetector --> get_size
+    DeviceDetector --> get_device_properties
+    DeviceDetector --> detect_type
+    DeviceDetector --> is_mounted
+    DeviceDetector --> get_partitions
+    DeviceDetector --> display_info
+    
+    %% detect_type calls
+    detect_type --> _check_rotational
+    detect_type --> _check_nvme_interface
+    detect_type --> _check_mmc_interface
+    detect_type --> _analyze_rpm_indicators
+    detect_type --> _determine_type
+    
+    %% _determine_type calls
+    _determine_type --> _detect_from_model_name
+    
+    %% display_info calls
+    display_info --> _display_header
+    display_info --> _display_basic_info
+    display_info --> _display_type_info
+    display_info --> _display_partition_info
+    display_info --> _display_mount_status
+    
+    %% Styling
+    classDef classNode fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    classDef publicMethod fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef privateMethod fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    
+    class DeviceDetector classNode
+    class get_size,get_device_properties,detect_type,is_mounted,get_partitions,display_info publicMethod
+    class _check_rotational,_check_nvme_interface,_check_mmc_interface,_analyze_rpm_indicators,_detect_from_model_name,_determine_type,_display_header,_display_basic_info,_display_type_info,_display_partition_info,_display_mount_status privateMethod
+```
+
+### Function Call Graph (Legacy + New)
 
 ```mermaid
 graph TD
     %% Entry Point
     main["main()<br/>Entry point - CLI argument parsing"]
 
-    %% Device Information Functions
-    get_device_info["get_device_info(device)<br/>Display device information"]
+    %% DeviceDetector Class (New)
+    DeviceDetector["DeviceDetector Class<br/>Object-oriented device operations"]
+    
+    %% Legacy Functions (Backward Compatibility)
+    get_device_info["get_device_info(device)<br/>DEPRECATED - Use DeviceDetector"]
+    detect_disk_type["detect_disk_type(device)<br/>DEPRECATED - Use DeviceDetector"]
+    check_device_mounted["check_device_mounted(device)<br/>DEPRECATED - Use DeviceDetector"]
+
+    %% Core Functions
     list_all_devices["list_all_devices()<br/>List all available devices"]
     get_block_device_size["get_block_device_size(device)<br/>Get device size in bytes"]
-
-    %% Disk Type Detection
-    detect_disk_type["detect_disk_type(device, debug=False)<br/>Detect HDD/SSD/NVMe/eMMC"]
     perform_hdd_pretest["perform_hdd_pretest(device, chunk_size)<br/>Test HDD write speeds at different positions"]
 
     %% Progress Management
@@ -47,9 +121,10 @@ graph TD
     main --> clear_progress
     main --> wipe_device
 
-    %% get_device_info calls
-    get_device_info --> get_block_device_size
-    get_device_info --> detect_disk_type
+    %% Legacy wrapper calls (backward compatibility)
+    get_device_info --> DeviceDetector
+    detect_disk_type --> DeviceDetector
+    check_device_mounted --> DeviceDetector
 
     %% wipe_device calls
     wipe_device --> get_block_device_size
@@ -67,14 +142,18 @@ graph TD
 
     %% Styling
     classDef entryPoint fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef classNode fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef coreFunction fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef utilityFunction fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef progressFunction fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef deprecatedFunction fill:#ffebee,stroke:#c62828,stroke-width:2px,stroke-dasharray: 5 5
 
     class main entryPoint
-    class wipe_device,get_device_info,detect_disk_type,perform_hdd_pretest coreFunction
-    class parse_size,get_block_device_size utilityFunction
+    class DeviceDetector classNode
+    class wipe_device,perform_hdd_pretest coreFunction
+    class parse_size,get_block_device_size,list_all_devices utilityFunction
     class save_progress,load_progress,clear_progress,get_progress_file,find_resume_files,display_resume_info progressFunction
+    class get_device_info,detect_disk_type,check_device_mounted deprecatedFunction
 ```
 
 ### Function Categories
@@ -82,11 +161,19 @@ graph TD
 #### **Entry Point**
 - `main()` - CLI argument parsing and orchestration
 
+#### **Object-Oriented Classes (New)**
+- `DeviceDetector` - Encapsulates all device detection and information operations
+  - **Public Methods**: `get_size()`, `get_device_properties()`, `detect_type()`, `is_mounted()`, `get_partitions()`, `display_info()`
+  - **Private Methods**: `_check_rotational()`, `_check_nvme_interface()`, `_check_mmc_interface()`, `_analyze_rpm_indicators()`, `_detect_from_model_name()`, `_determine_type()`, `_display_*()` methods
+
 #### **Core Functions**
 - `wipe_device()` - Main wiping logic with disk type detection and algorithm selection
-- `get_device_info()` - Display comprehensive device information
-- `detect_disk_type()` - Identify storage device type (HDD/SSD/NVMe/eMMC)
 - `perform_hdd_pretest()` - Test HDD write speeds to optimize algorithm selection
+
+#### **Legacy Functions (Backward Compatibility)**
+- `get_device_info()` - **DEPRECATED** - Use `DeviceDetector(device).display_info()` instead
+- `detect_disk_type()` - **DEPRECATED** - Use `DeviceDetector(device).detect_type()` instead
+- `check_device_mounted()` - **DEPRECATED** - Use `DeviceDetector(device).is_mounted()` instead
 
 #### **Progress Management**
 - `save_progress()` - Save wipe progress and pretest results
@@ -103,10 +190,18 @@ graph TD
 
 ### Key Design Patterns
 
-1. **Progressive Enhancement**: The system starts with basic wiping and adds intelligent features (disk detection, pretesting) for optimal performance.
+1. **Object-Oriented Encapsulation**: The new `DeviceDetector` class encapsulates all device-related operations, providing a clean interface and internal state management.
 
-2. **Resume Capability**: Progress is saved at regular intervals, allowing interrupted wipes to be resumed.
+2. **Backward Compatibility**: Legacy functions are maintained as thin wrappers around the new class methods, ensuring existing code continues to work without modification.
 
-3. **Adaptive Algorithms**: HDD pretesting enables selection of optimal wiping strategies based on actual device performance.
+3. **Progressive Enhancement**: The system starts with basic wiping and adds intelligent features (disk detection, pretesting) for optimal performance.
 
-4. **Separation of Concerns**: Device information, progress management, and core wiping logic are cleanly separated into distinct function groups.
+4. **Resume Capability**: Progress is saved at regular intervals, allowing interrupted wipes to be resumed.
+
+5. **Adaptive Algorithms**: HDD pretesting enables selection of optimal wiping strategies based on actual device performance.
+
+6. **Separation of Concerns**: Device information, progress management, and core wiping logic are cleanly separated into distinct function groups and classes.
+
+7. **Method Decomposition**: Complex operations are broken down into smaller, focused methods (e.g., `detect_type()` uses 6 helper methods).
+
+8. **Error Handling**: Comprehensive error handling with graceful degradation and informative error messages.

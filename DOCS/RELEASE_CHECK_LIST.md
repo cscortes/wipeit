@@ -3,12 +3,13 @@
 **⚠️ WARNING: This tool is EXTREMELY DESTRUCTIVE and will PERMANENTLY DESTROY data! ⚠️**
 
 **🚨 USE AT YOUR OWN RISK - ALL DATA WILL BE IRREVERSIBLY DESTROYED! 🚨**
+- make "clean_files" to remove invisible characters from file
 - make sure modified/new files are conforming to the programming_style_guide
-- make pre-git-prep
-- make security
+- make "pre-git-prep"
+- make "security"
     - if fail stop, alert user to security issues!
     - else continue with next item on release check list.
-- make tests
+- make "tests"
     - if fail stop, alert user that tests failed!
     - else continue with next item on release check list.
 - bump symantic version
