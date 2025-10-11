@@ -32,6 +32,9 @@ wipeit = "src.wipeit:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.uv]
 dev-dependencies = [
     # Code quality and formatting tools
