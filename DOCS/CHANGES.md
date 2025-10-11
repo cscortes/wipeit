@@ -43,14 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2025-10-11
 
 ### Added
-- **🏗️ WipeStrategy Class Architecture**: Major refactoring of wiping logic into object-oriented strategy pattern
+- **WipeStrategy Class Architecture**: Major refactoring of wiping logic into object-oriented strategy pattern
   - **WipeStrategy abstract base class**: Common functionality for all wiping strategies
   - **StandardStrategy**: Fixed chunk size wiping for general use
   - **SmallChunkStrategy**: Optimized for slow drives with smaller chunks
   - **AdaptiveStrategy**: Dynamic chunk sizing based on disk position and speed
   - **Backward compatibility**: Original `wipe_device()` function maintained as wrapper
   - **New test suite**: `test_wipe_strategy.py` with comprehensive unit tests
-- **🔍 DiskPretest Class**: Refactored HDD pretest functionality into reusable class
+- **DiskPretest Class**: Refactored HDD pretest functionality into reusable class
   - **DiskPretest class**: Encapsulated pretest logic with testable methods
   - **PretestResults dataclass**: Structured pretest outcome data
   - **Quiet mode support**: Non-interactive pretest execution
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2025-01-11
 
 ### Added
-- **📊 Comprehensive Codebase Reports**: New `make reports` target providing detailed project statistics
+- **Comprehensive Codebase Reports**: New `make reports` target providing detailed project statistics
   - **File structure analysis**: Total files, Python files, documentation, configuration files
   - **Code metrics**: Lines of code, documentation lines, file sizes
   - **Code coverage analysis**: Detailed coverage reports with missing line information

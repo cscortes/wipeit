@@ -14,6 +14,52 @@ to dev in the TODO.md as a low priority item.
 - make sure we have unittest code coverage for all code.
 - make sure all dependencies for release and debug are being updated in pyproject.toml
 
+## Icon Usage
+
+**Minimize icon usage** - icons should only be used for critical alerts and
+warnings, not for decoration or visual enhancement.
+
+### Allowed Icons
+
+Only the following icons are permitted:
+- **⚠️** (Warning Triangle): For warnings and caution messages
+- **🚨** (Police Light): For critical alerts and destructive actions
+
+### Prohibited Icons
+
+All other icons are prohibited, including but not limited to:
+- Decorative icons (🔍 🔒 💾 🛡️ 🎯 🔬 ⚡ 🎨 📈 etc.)
+- Status icons (✅ ❌ 🔄 ⏰ ⏱️ 🛑 etc.)
+- Informational icons (📋 📊 📝 📦 🔧 🏗️ 🧪 ℹ️ etc.)
+
+### Rationale
+
+- **Professionalism**: System utilities should be clean and professional
+- **Accessibility**: Icons may not render properly on all terminals
+- **Clarity**: Text-based indicators (e.g., "WARNING:", "NOTE:") are clearer
+- **Maintenance**: Fewer icons means simpler documentation and code
+
+### Examples
+
+Good:
+```python
+print("WARNING: This will destroy all data")
+print("CRITICAL: Device is mounted - cannot proceed")
+```
+
+Bad:
+```python
+print("🔍 Scanning device...")
+print("✅ Operation complete")
+print("📊 Progress: 50%")
+```
+
+Acceptable (critical warnings only):
+```python
+print("⚠️ WARNING: This will destroy all data")
+print("🚨 CRITICAL: Device is mounted - cannot proceed")
+```
+
 ## Class Programming Style
 
 ### Class Design Principles

@@ -260,7 +260,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         detector = DeviceDetector(device)
         disk_type, confidence, details = detector.detect_type()
 
-        print(f"\n💾 Detected disk type: {disk_type} "
+        print(f"\nDetected disk type: {disk_type} "
               f"(confidence: {confidence})")
         if details:
             print(f"   Detection details: {', '.join(details)}")
@@ -286,9 +286,9 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         if disk_type == "HDD" and not skip_pretest:
             if existing_pretest_results:
                 pretest_results = existing_pretest_results
-                print("🔄 Using previous pretest results")
+                print("Using previous pretest results")
             else:
-                print("🔄 HDD detected - performing pretest to optimize "
+                print("HDD detected - performing pretest to optimize "
                       "wiping algorithm...")
                 pretest_results = perform_hdd_pretest(device, chunk_size)
                 if pretest_results:
@@ -300,10 +300,10 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         if pretest_results:
             algorithm = pretest_results.get(
                 'recommended_algorithm', 'standard')
-            print(f"🎯 Using {algorithm} algorithm based on pretest")
+            print(f"Using {algorithm} algorithm based on pretest")
         else:
             algorithm = "standard"
-            print(f"🎯 Using {algorithm} algorithm")
+            print(f"Using {algorithm} algorithm")
 
         def progress_callback(written_bytes, total_bytes, chunk_bytes):
             """Callback for saving progress from strategy."""
@@ -311,14 +311,14 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
                           pretest_results)
 
         if algorithm == "adaptive_chunk":
-            print("🔄 Using adaptive chunk sizing for optimal performance")
+            print("Using adaptive chunk sizing for optimal performance")
             strategy = AdaptiveStrategy(
                 device, size, chunk_size, written, pretest_results,
                 progress_callback
             )
         elif algorithm == "small_chunk":
             chunk_mb = min(chunk_size, MAX_SMALL_CHUNK_SIZE) / MEGABYTE
-            print(f"🔄 Using small chunk size: {chunk_mb:.0f} MB")
+            print(f"Using small chunk size: {chunk_mb:.0f} MB")
             strategy = SmallChunkStrategy(
                 device, size, chunk_size, written, pretest_results,
                 progress_callback
@@ -347,7 +347,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         print(f"• Size: {size / (1024**3):.2f} GB")
         print(f"• Time: {total_time:.2f} seconds")
         print(f"• Average speed: {avg_speed:.2f} MB/s")
-        print("• Status: ✅ Successfully wiped")
+        print("• Status: Successfully wiped")
 
     except KeyboardInterrupt:
         print("\n\n⚠️  Wipe interrupted by user")
@@ -356,7 +356,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         save_progress(device, written, size, chunk_size, pretest_results)
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error during wipe: {e}")
+        print(f"\nError during wipe: {e}")
         save_progress(device, written, size, chunk_size, pretest_results)
         sys.exit(1)
 
@@ -406,7 +406,7 @@ Examples:
 
     # Handle --list option
     if args.list:
-        print("📋 Available devices (requires sudo):")
+        print("Available devices (requires sudo):")
         print("=" * 50)
         list_all_devices()
         return
@@ -415,7 +415,7 @@ Examples:
     if not args.device:
         # Display resume information if available
         display_resume_info()
-        print("📋 Available devices (requires sudo):")
+        print("Available devices (requires sudo):")
         print("=" * 50)
         list_all_devices()
         return
@@ -455,15 +455,15 @@ Examples:
         print("\n" + "=" * 70)
         print("🚨 SAFETY CHECK FAILED - DEVICE IS MOUNTED")
         print("=" * DISPLAY_LINE_WIDTH)
-        print(f"❌ Cannot proceed with wiping {args.device}")
+        print(f"Cannot proceed with wiping {args.device}")
         print("   The device or its partitions are currently mounted!")
         print()
         if mount_info:
-            print("📌 Mounted partitions found:")
+            print("Mounted partitions found:")
             for mount in mount_info:
                 print(f"   • {mount}")
             print()
-        print("🔧 TO FIX THIS ISSUE:")
+        print("TO FIX THIS ISSUE:")
         print("   1. Unmount all partitions on this device:")
         print(f"      sudo umount /dev/{args.device.split('/')[-1]}*")
         print("   2. Or unmount specific partitions:")
@@ -479,7 +479,7 @@ Examples:
         print("   • System instability or crashes")
         print("   • Loss of data on other mounted partitions")
         print()
-        print("🛑 Program terminated for safety.")
+        print("Program terminated for safety.")
         sys.exit(1)
 
     # Load progress if resuming

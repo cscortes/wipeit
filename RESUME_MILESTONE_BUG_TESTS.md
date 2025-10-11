@@ -5,7 +5,7 @@ When resuming a wipe (e.g., at 47%), `last_milestone` was initialized to 0 inste
 
 ## Tests That Catch This Bug
 
-### ✅ Primary Tests (Directly Catch the Bug)
+### Primary Tests (Directly Catch the Bug)
 
 #### 1. `test_milestone_initialization_on_resume`
 **Location**: `test_wipe_strategy.py:211`  
@@ -13,7 +13,7 @@ When resuming a wipe (e.g., at 47%), `last_milestone` was initialized to 0 inste
 **Coverage**:
 - Resume from 0% → `last_milestone = 0`
 - Resume from 12% → `last_milestone = 10`
-- Resume from 47% → `last_milestone = 45` ✅ **CATCHES THE BUG**
+- Resume from 47% → `last_milestone = 45` **CATCHES THE BUG**
 - Resume from 5% → `last_milestone = 5`
 - Resume from 99% → `last_milestone = 95`
 
@@ -65,7 +65,7 @@ With the bug, `milestones_shown` would be `[50]` if working correctly, but could
 
 ---
 
-### ❌ Related Tests (Don't Catch This Specific Bug)
+### Related Tests (Don't Catch This Specific Bug)
 
 #### 4. `test_milestone_tracking`
 **Location**: `test_wipe_strategy.py:111`  
@@ -119,9 +119,9 @@ With the bug, `milestones_shown` would be `[50]` if working correctly, but could
 
 **Tests that would catch the resume milestone bug: 3**
 
-1. ✅ `test_milestone_initialization_on_resume` - Direct assertion on `last_milestone` value
-2. ✅ `test_milestone_not_repeated_after_resume` - Verifies no repeated milestones after resume
-3. ✅ `test_resume_milestone_integration` - Full integration test of user scenario
+1. `test_milestone_initialization_on_resume` - Direct assertion on `last_milestone` value
+2. `test_milestone_not_repeated_after_resume` - Verifies no repeated milestones after resume
+3. `test_resume_milestone_integration` - Full integration test of user scenario
 
 **Test count**: 146 total tests (was 145, added 1 integration test)  
 **Coverage**: 95%

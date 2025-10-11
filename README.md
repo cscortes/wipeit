@@ -23,7 +23,7 @@ A secure device wiping utility that overwrites block devices with random data.
 - [Safety Features](#safety-features)
 - [Common Use Cases](#common-use-cases)
 - [Troubleshooting](#troubleshooting)
-- [Performance Recommendations](#performance-recommendations) 📊
+- [Performance Recommendations](#performance-recommendations)
   - [Expected Write Speeds](#expected-write-speeds)
   - [Time Estimates by Device Size](#time-estimates-by-device-size)
   - [Important Note: Speed Variations During Wiping](#-important-note-speed-variations-during-wiping)
@@ -34,15 +34,53 @@ A secure device wiping utility that overwrites block devices with random data.
 
 ## Features
 
-- 🔍 List all block devices with detailed information (size, model, serial, partitions, disk type)
-- 🔒 Securely wipe devices by overwriting with random data
-- 📊 Real-time progress display with speed and ETA
-- ⚠️  Safety checks for mounted devices
-- 💾 Chunked writing for efficient memory usage
-- 🛡️ Root privilege verification before execution
-- 🎯 **NEW**: Automatic disk type detection (HDD, SSD, NVMe)
-- 🔬 **NEW**: HDD pretest with adaptive algorithms for optimal performance
-- ⚡ **NEW**: Smart algorithm selection based on disk characteristics
+### Core Functionality
+- **Secure Wiping**: Overwrites block devices with random data for permanent data destruction
+- **Device Listing**: Display all block devices with detailed information (size, model, serial, partitions)
+- **Memory Efficient**: Chunked writing prevents excessive RAM usage (configurable buffer size: 1M-1T)
+- **Safety First**: Root privilege verification and comprehensive safety checks
+
+### Intelligent Wiping
+- **Automatic Disk Detection**: Identifies disk type (HDD, SSD, NVMe) with confidence scoring
+- **HDD Pretest**: Tests write speeds at different disk positions (beginning, middle, end)
+- **Adaptive Algorithms**: Three wiping strategies automatically selected based on disk characteristics:
+  - **Standard Strategy**: Fixed chunk size for consistent SSDs and fast HDDs
+  - **Small Chunk Strategy**: 10MB chunks for slow/unreliable drives (better responsiveness)
+  - **Adaptive Strategy**: Dynamic chunk sizing based on disk position and speed (HDD optimization)
+
+### Progress & Resume
+- **Real-time Progress**: Live display with percentage, speed (MB/s), ETA, and progress bar
+- **Estimated Finish Time**: Shows actual clock time (e.g., "3:15 PM") at every 5% milestone
+- **Resume Support**: Automatic progress saving every 1GB or 10 chunks
+- **Resume Detection**: Prompts user about previous interrupted wipes when starting
+- **24-Hour Expiry**: Progress files automatically expire after 24 hours
+
+### Safety Features
+- ⚠️ **Mount Detection**: Prevents wiping mounted devices (blocks execution if mounted)
+- 🚨 **Confirmation Prompt**: Requires explicit 'y' confirmation before wiping
+- **Graceful Interruption**: Ctrl+C saves progress and provides resume instructions
+- **Device Verification**: Shows detailed device info before wiping to prevent mistakes
+- **Permission Checks**: Ensures proper root/sudo privileges
+
+### User Experience
+- **Clean Output**: Professional formatting with section headers and bullet points
+- **Progress Milestones**: Milestone messages every 5% with estimated completion time
+- **Resume Workflow**: Automatic detection and helpful prompts for pending operations
+- **Detailed Reporting**: Comprehensive completion summary with statistics
+- **Responsive**: Immediate Ctrl+C handling with progress preservation
+
+### Configuration Options
+- **Buffer Size**: Configurable from 1MB to 1TB (default: 100MB)
+- **Skip Pretest**: Option to bypass HDD pretest for faster start
+- **Resume Flag**: Explicit --resume option for continuing interrupted wipes
+- **List Devices**: Dedicated --list option for device enumeration
+
+### Technical Features
+- **Strategy Pattern**: Object-oriented wiping strategies for extensibility
+- **95% Test Coverage**: 148 comprehensive unit and integration tests
+- **Performance Tracking**: Speed sampling and analysis for adaptive algorithms
+- **Progress Persistence**: JSON-based progress files with device tracking
+- **Type Detection**: Uses rotation rate, model strings, and device paths for accurate detection
 
 ## Installation
 
@@ -99,7 +137,7 @@ sudo wipeit
 ```bash
 $ ./wipeit.py
 
-🔄 Found pending wipe operations:
+Found pending wipe operations:
 ==================================================
 
 1. Device: /dev/sdb
@@ -109,12 +147,12 @@ $ ./wipeit.py
    Started: Thu Oct  9 18:04:00 2025
    Resume command: sudo ./wipeit.py --resume /dev/sdb
 
-💡 To resume any operation, use: sudo ./wipeit.py --resume <device>
-💡 To start fresh, the progress file will be overwritten
+NOTE: To resume any operation, use: sudo ./wipeit.py --resume <device>
+NOTE: To start fresh, the progress file will be overwritten
 ==================================================
 
 ==================================================
-📋 Available devices (requires sudo):
+Available devices (requires sudo):
 ==================================================
 Error: This program must be run as root (sudo) to list devices.
 Use: sudo ./wipeit.py
@@ -203,8 +241,8 @@ sdb  500G disk
 
 /dev/sdb does not appear to be mounted.
 
-💾 Detected disk type: HDD (confidence: HIGH)
-🔄 HDD detected - performing pretest to optimize wiping algorithm...
+Detected disk type: HDD (confidence: HIGH)
+HDD detected - performing pretest to optimize wiping algorithm...
 ```
 
 #### HDD Pretest Process
@@ -212,7 +250,7 @@ sdb  500G disk
 For HDDs, wipeit performs a pretest to measure write speeds at different disk positions:
 
 ```bash
-🔍 Performing HDD pretest to optimize wiping algorithm...
+Performing HDD pretest to optimize wiping algorithm...
 This will test write speeds at different disk positions.
   Testing beginning of disk...
     Beginning: 120.45 MB/s
@@ -221,13 +259,13 @@ This will test write speeds at different disk positions.
   Testing end of disk...
     End: 78.21 MB/s
 
-📊 Pretest Analysis:
+Pretest Analysis:
   Average speed: 97.99 MB/s
   Speed variance: 42.24 MB/s
   Recommended algorithm: adaptive_chunk
   Reason: High speed variance detected - adaptive chunk sizing recommended
 
-✅ Pretest complete. Using adaptive_chunk algorithm.
+Pretest complete. Using adaptive_chunk algorithm.
   Using adaptive chunk sizing based on disk position
 ```
 
@@ -261,10 +299,10 @@ When resuming an interrupted wipe on an HDD:
 - **Pretest results are preserved**: All pretest data is saved with progress and restored on resume
 
 This ensures that:
-- ✅ **Optimal performance** is maintained throughout the entire wipe process
-- ✅ **No duplicate testing** when resuming with existing pretest results
-- ✅ **Consistent algorithm** is used from start to finish
-- ✅ **Time savings** by reusing previous pretest results
+- **Optimal performance** is maintained throughout the entire wipe process
+- **No duplicate testing** when resuming with existing pretest results
+- **Consistent algorithm** is used from start to finish
+- **Time savings** by reusing previous pretest results
 
 **⚠️  CRITICAL WARNING**:
 - This will **PERMANENTLY DESTROY ALL DATA** on the device
@@ -317,12 +355,12 @@ sudo ./wipeit.py --resume /dev/sdb
 ```bash
 $ sudo ./wipeit.py --resume /dev/sdb
 
-💾 Detected disk type: HDD (confidence: HIGH)
+Detected disk type: HDD (confidence: HIGH)
    Detection details: Rotational device
 Resuming wipe from 19.74 GB (15.42% complete)
 Previous session: Wed Oct  1 18:30:45 2025
    Found previous pretest results from Wed Oct  1 18:30:45 2025
-✅ Using previous pretest results for optimal algorithm.
+Using previous pretest results for optimal algorithm.
    Previous algorithm: adaptive_chunk
 Device: /dev/sdb
 Size: 128.00 GB
@@ -343,19 +381,19 @@ Progress: 16.12% | Written: 20.64 GB | Speed: 85.32 MB/s | ETA: 16.45 min | Buff
 ```bash
 $ sudo ./wipeit.py --resume /dev/sdb
 
-💾 Detected disk type: HDD (confidence: HIGH)
+Detected disk type: HDD (confidence: HIGH)
    Detection details: Rotational device
 Resuming wipe from 19.74 GB (15.42% complete)
 Previous session: Wed Oct  1 18:30:45 2025
 
-🔄 HDD detected - pretest will be performed to optimize wiping algorithm...
+HDD detected - pretest will be performed to optimize wiping algorithm...
    This will test write speeds at different disk positions.
    The pretest may take a few minutes depending on disk size.
 
 Proceed with HDD pretest? (y/n): y
 
-🔄 Starting HDD pretest...
-🔍 Performing HDD pretest to optimize wiping algorithm...
+Starting HDD pretest...
+Performing HDD pretest to optimize wiping algorithm...
    This will test write speeds at different disk positions.
    ⚠️  WARNING: This will write test data to the disk!
    Disk size: 128.00 GB
@@ -368,13 +406,13 @@ Proceed with HDD pretest? (y/n): y
   Testing end of disk...
     End: 78.21 MB/s
 
-📊 Pretest Analysis:
+Pretest Analysis:
   Average speed: 97.99 MB/s
   Speed variance: 42.24 MB/s
   Recommended algorithm: adaptive_chunk
   Reason: High speed variance detected - adaptive chunk sizing recommended
 
-✅ Pretest complete. Using adaptive_chunk algorithm.
+Pretest complete. Using adaptive_chunk algorithm.
   Using adaptive chunk sizing based on disk position
 Device: /dev/sdb
 Size: 128.00 GB
@@ -464,15 +502,15 @@ These are typically pre-installed on most Linux distributions.
 ## Safety Features
 
 ### Before Wiping
-- ✅ **Root check:** Verifies the program is run with root privileges
-- ✅ **Device information:** Displays full device details before proceeding
-- ✅ **Mount safety check:** **STOPS EXECUTION** if device or partitions are mounted
-- ✅ **Explicit confirmation:** Requires user to type 'y' to proceed
+- **Root check:** Verifies the program is run with root privileges
+- **Device information:** Displays full device details before proceeding
+- **Mount safety check:** **STOPS EXECUTION** if device or partitions are mounted
+- **Explicit confirmation:** Requires user to type 'y' to proceed
 
 ### During Wiping
-- ✅ **Progress tracking:** Real-time feedback on operation status
-- ✅ **Interruptible:** Can be stopped at any time with Ctrl+C (immediate response)
-- ✅ **Resumable:** Automatically saves progress and allows resuming from interruption point
+- **Progress tracking:** Real-time feedback on operation status
+- **Interruptible:** Can be stopped at any time with Ctrl+C (immediate response)
+- **Resumable:** Automatically saves progress and allows resuming from interruption point
 
 ### Mount Safety Protection
 **🚨 CRITICAL SAFETY FEATURE: Mount Detection and Prevention**
@@ -491,13 +529,13 @@ $ sudo wipeit /dev/sdb
 ======================================================================
 🚨 SAFETY CHECK FAILED - DEVICE IS MOUNTED
 ======================================================================
-❌ Cannot proceed with wiping /dev/sdb
+Cannot proceed with wiping /dev/sdb
    The device or its partitions are currently mounted!
 
-📌 Mounted partitions found:
+Mounted partitions found:
    • /dev/sdb1 -> /mnt/usb
 
-🔧 TO FIX THIS ISSUE:
+TO FIX THIS ISSUE:
    1. Unmount all partitions on this device:
       sudo umount /dev/sdb*
    2. Or unmount specific partitions:
@@ -511,7 +549,7 @@ $ sudo wipeit /dev/sdb
    • System instability or crashes
    • Loss of data on other mounted partitions
 
-🛑 Program terminated for safety.
+Program terminated for safety.
 ```
 
 **Why this matters:**
@@ -645,11 +683,11 @@ Progress: 95.00% | Speed: 100.00 MB/s | ETA: 2.00 min
 ```
 
 #### What This Means
-- ✅ **This is normal behavior** - not an error
-- ✅ **Hard drives naturally slow down** on inner tracks
-- ✅ **Your wipeit implementation is working correctly**
-- ✅ **The speed calculation is accurate**
-- ✅ **ETA will adjust automatically** as speed changes
+- **This is normal behavior** - not an error
+- **Hard drives naturally slow down** on inner tracks
+- **Your wipeit implementation is working correctly**
+- **The speed calculation is accurate**
+- **ETA will adjust automatically** as speed changes
 
 #### Device-Specific Behavior
 - **Traditional HDDs**: Significant speed drop (30-50% reduction)
@@ -894,7 +932,7 @@ We welcome contributions from the community! There are many ways to participate:
 - **Platform support** - Need support for additional operating systems?
 - **Integration requests** - Want wipeit to work with other tools?
 
-#### 🔧 **Code Contributions**
+#### **Code Contributions**
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/amazing-feature`)
 3. **Add tests** for new functionality
@@ -902,19 +940,19 @@ We welcome contributions from the community! There are many ways to participate:
 5. **Follow coding standards** (`make pre-git-prep`)
 6. **Submit a pull request**
 
-#### 📚 **Documentation**
+#### **Documentation**
 - **Improve guides** - Make documentation clearer
 - **Add examples** - Share use cases and workflows
 - **Translate** - Help make wipeit accessible worldwide
 - **Tutorials** - Create step-by-step guides
 
-#### 🧪 **Testing**
+#### **Testing**
 - **Test on different hardware** - Help ensure compatibility
 - **Report edge cases** - Find scenarios we haven't tested
 - **Performance testing** - Help optimize wiping speeds
 - **Security validation** - Verify wiping effectiveness
 
-**Every contribution matters!** Whether you're reporting a bug, suggesting a feature, or submitting code, you're helping make wipeit better for everyone. 🚀
+**Every contribution matters!** Whether you're reporting a bug, suggesting a feature, or submitting code, you're helping make wipeit better for everyone.
 
 ## Documentation
 
@@ -929,28 +967,28 @@ MIT License
 
 ## Support
 
-### 🆘 **Need Help?**
+### **Need Help?**
 
 **Before asking for help:**
 1. Check the [troubleshooting section](#troubleshooting-performance-issues) above
 2. Verify all [system requirements](#requirements) are met
 3. Review the [documentation](DOCS/) for detailed guides
 
-### 📞 **Get Support**
+### **Get Support**
 
-- **🐛 Found a bug?** → [Open an issue](https://github.com/cscortes/wipeit/issues/new?template=bug_report.md)
-- **💡 Have a feature request?** → [Request a feature](https://github.com/cscortes/wipeit/issues/new?template=feature_request.md)
-- **❓ General questions?** → [Start a discussion](https://github.com/cscortes/wipeit/discussions)
-- **📖 Need documentation help?** → [Improve the docs](https://github.com/cscortes/wipeit/issues/new?template=documentation.md)
+- **Found a bug?** → [Open an issue](https://github.com/cscortes/wipeit/issues/new?template=bug_report.md)
+- **Have a feature request?** → [Request a feature](https://github.com/cscortes/wipeit/issues/new?template=feature_request.md)
+- **General questions?** → [Start a discussion](https://github.com/cscortes/wipeit/discussions)
+- **Need documentation help?** → [Improve the docs](https://github.com/cscortes/wipeit/issues/new?template=documentation.md)
 
-### 🌟 **Show Your Support**
+### **Show Your Support**
 
-- **Star this project** ⭐ - Help others discover wipeit
-- **Watch for updates** 👀 - Get notified of new releases
-- **Share your experience** 💬 - Help others in discussions
-- **Contribute** 🔧 - See the [Contributing](#contributing) section above
+- **Star this project** - Help others discover wipeit
+- **Watch for updates** - Get notified of new releases
+- **Share your experience** - Help others in discussions
+- **Contribute** - See the [Contributing](#contributing) section above
 
-**We're here to help!** The wipeit community is friendly and responsive. Don't hesitate to reach out! 🤝
+**We're here to help!** The wipeit community is friendly and responsive. Don't hesitate to reach out!
 
 ## 🚨 FINAL WARNING - READ THIS CAREFULLY! 🚨
 
@@ -959,14 +997,14 @@ MIT License
 **⚠️ USE AT YOUR OWN RISK - ALL DATA WILL BE PERMANENTLY DESTROYED! ⚠️**
 
 **Before using this tool, you MUST:**
-- ✅ **TRIPLE-CHECK** the device path multiple times
-- ✅ **VERIFY** you're targeting the correct device (NOT your system disk!)
-- ✅ **BACKUP** any important data before proceeding
-- ✅ **UNMOUNT** devices before wiping
-- ✅ **NEVER** wipe your system disk or any device with important data
-- ✅ **TEST** on a disposable device first if you're unsure
-- ✅ **UNDERSTAND** that this process cannot be undone
-- ✅ **ACCEPT** full responsibility for any data loss
+- **TRIPLE-CHECK** the device path multiple times
+- **VERIFY** you're targeting the correct device (NOT your system disk!)
+- **BACKUP** any important data before proceeding
+- **UNMOUNT** devices before wiping
+- **NEVER** wipe your system disk or any device with important data
+- **TEST** on a disposable device first if you're unsure
+- **UNDERSTAND** that this process cannot be undone
+- **ACCEPT** full responsibility for any data loss
 
 **🚨 CRITICAL REMINDERS:**
 - This tool will **PERMANENTLY DESTROY** all data on the target device

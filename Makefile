@@ -94,7 +94,7 @@ tests:
 	@echo "Import sorting checks passed."
 	@echo "Style checks passed - no line length violations found."
 	@echo ""
-	@echo "✅ Test suite passed - code is ready for production"
+	@echo "Test suite passed - code is ready for production"
 
 # Run only flake8 style checks
 lint:
@@ -109,7 +109,7 @@ lint:
 	@echo "=== Checking src/test_device_detector.py ==="
 	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
 	@echo ""
-	@echo "✅ Style checks passed - no line length violations found"
+	@echo "Style checks passed - no line length violations found"
 
 # Prepare code for git commit by fixing style issues
 pre-git-prep:
@@ -135,8 +135,8 @@ pre-git-prep:
 	@echo "Checking src/test_device_detector.py..."
 	@python3 -m flake8 src/test_device_detector.py --max-line-length=79 --count
 	@echo ""
-	@echo "✅ Code prepared for git commit - all style issues fixed"
-	@echo "💡 Future: This target may include additional pre-commit tasks"
+	@echo "Code prepared for git commit - all style issues fixed"
+	@echo "Note: This target may include additional pre-commit tasks in the future"
 
 # Run security scans with bandit and safety
 security:
@@ -150,8 +150,8 @@ security:
 	@echo "Checking for known security vulnerabilities in dependencies..."
 	@python3 -m safety scan || echo "⚠️  Safety found issues (see output above)"
 	@echo ""
-	@echo "✅ Security scans completed"
-	@echo "💡 Note: Low severity issues in system tools are expected"
+	@echo "Security scans completed"
+	@echo "Note: Low severity issues in system tools are expected"
 
 # Clean invisible characters from all relevant files
 clean_files:
@@ -161,18 +161,18 @@ clean_files:
 	@echo "Processing Python, Markdown, YAML, and other text files..."
 	@python3 scripts/clean_invisible_chars.py . --clean --extensions py md yml yaml txt json toml cfg ini sh bash
 	@echo ""
-	@echo "✅ Invisible character cleaning completed"
-	@echo "💡 Backup files (.bak) created for safety"
+	@echo "Invisible character cleaning completed"
+	@echo "Note: Backup files (.bak) created for safety"
 
 # Generate comprehensive codebase statistics and reports
 reports:
 	@echo "Generating comprehensive codebase reports..."
 	@echo ""
 	@echo "=========================================="
-	@echo "📊 CODEBASE STATISTICS REPORT"
+	@echo "CODEBASE STATISTICS REPORT"
 	@echo "=========================================="
 	@echo ""
-	@echo "=== 📁 FILE STRUCTURE ANALYSIS ==="
+	@echo "=== FILE STRUCTURE ANALYSIS ==="
 	@echo "Total files in project:"
 	@find . -type f -not -path "./.git/*" -not -path "./__pycache__/*" -not -path "./.pytest_cache/*" -not -path "./.venv/*" -not -path "./venv/*" | wc -l
 	@echo ""
@@ -195,7 +195,7 @@ reports:
 	@echo "Total lines of documentation:"
 	@find . -name "*.md" -not -path "./.git/*" -not -path "./.venv/*" -not -path "./venv/*" -exec wc -l {} + | tail -1
 	@echo ""
-	@echo "=== 🧪 CODE COVERAGE ANALYSIS ==="
+	@echo "=== CODE COVERAGE ANALYSIS ==="
 	@echo "Running tests with coverage..."
 	@cd src && python3 -m coverage run -m unittest discover -s . -p "test_*.py" > /dev/null 2>&1
 	@cd src && python3 -m coverage report --show-missing
@@ -203,14 +203,14 @@ reports:
 	@echo "Coverage summary:"
 	@cd src && python3 -m coverage report --show-missing | tail -1
 	@echo ""
-	@echo "=== 🔒 SECURITY ANALYSIS ==="
+	@echo "=== SECURITY ANALYSIS ==="
 	@echo "Running Bandit security scan..."
 	@python3 -m bandit -r src/ --ini .bandit -f txt -ll 2>/dev/null || echo "⚠️  Bandit scan completed (see output above for any issues)"
 	@echo ""
 	@echo "Running Safety dependency check..."
 	@python3 -m safety scan 2>/dev/null || echo "⚠️  Safety scan completed (see output above for any issues)"
 	@echo ""
-	@echo "=== 📦 DEPENDENCY ANALYSIS ==="
+	@echo "=== DEPENDENCY ANALYSIS ==="
 	@echo "Runtime dependencies:"
 	@if [ -f "pyproject.toml" ]; then \
 		echo "Main project dependencies:"; \
@@ -237,15 +237,15 @@ reports:
 		echo "No pyproject.toml found"; \
 	fi
 	@echo ""
-	@echo "=== 🎯 CODE QUALITY METRICS ==="
+	@echo "=== CODE QUALITY METRICS ==="
 	@echo "Running style checks..."
 	@echo "Flake8 violations:"
 	@python3 -m flake8 src/ --max-line-length=79 --count --statistics 2>/dev/null || echo "Style check completed"
 	@echo ""
 	@echo "Import sorting status:"
-	@python3 -m isort --check-only --diff src/wipeit.py src/device_detector.py src/test_wipeit.py src/test_device_detector.py 2>/dev/null && echo "✅ Imports are properly sorted" || echo "⚠️  Import sorting issues found"
+	@python3 -m isort --check-only --diff src/wipeit.py src/device_detector.py src/test_wipeit.py src/test_device_detector.py 2>/dev/null && echo "Imports are properly sorted" || echo "⚠️  Import sorting issues found"
 	@echo ""
-	@echo "=== 🏗️  PROJECT STRUCTURE ==="
+	@echo "=== PROJECT STRUCTURE ==="
 	@echo "Main source files:"
 	@ls -la src/*.py 2>/dev/null | awk '{print $$9, $$5}' | column -t
 	@echo ""
@@ -255,7 +255,7 @@ reports:
 	@echo "Documentation files:"
 	@ls -la DOCS/*.md 2>/dev/null | awk '{print $$9, $$5}' | column -t
 	@echo ""
-	@echo "=== 📈 COMPLEXITY ANALYSIS ==="
+	@echo "=== COMPLEXITY ANALYSIS ==="
 	@echo "Function and class counts:"
 	@echo "Classes:"
 	@total_class_count=$$(grep -r "^class " src/ --include="*.py" | wc -l); \
@@ -292,13 +292,13 @@ reports:
 		fi; \
 	fi
 	@echo ""
-	@echo "=== 🎨 CODE STYLE SUMMARY ==="
+	@echo "=== CODE STYLE SUMMARY ==="
 	@echo "Longest lines (>79 chars):"
 	@find src/ -name "*.py" -not -path "./.venv/*" -not -path "./venv/*" -exec awk 'length($$0) > 79 {print FILENAME ":" NR ": " $$0}' {} \; | head -5
 	@echo ""
-	@echo "=== 📋 REPORT SUMMARY ==="
-	@echo "✅ Codebase analysis completed"
-	@echo "📊 Reports generated for:"
+	@echo "=== REPORT SUMMARY ==="
+	@echo "Codebase analysis completed"
+	@echo "Reports generated for:"
 	@echo "   - File structure and metrics"
 	@echo "   - Code coverage analysis"
 	@echo "   - Security assessment"
@@ -306,9 +306,9 @@ reports:
 	@echo "   - Code quality metrics"
 	@echo "   - Project structure overview"
 	@echo ""
-	@echo "💡 Use 'make tests' for detailed test results"
-	@echo "💡 Use 'make security' for focused security analysis"
-	@echo "💡 Use 'make lint' for detailed style analysis"
+	@echo "Use 'make tests' for detailed test results"
+	@echo "Use 'make security' for focused security analysis"
+	@echo "Use 'make lint' for detailed style analysis"
 
 # Build distribution packages (wheel and source tarball)
 build:
@@ -325,7 +325,7 @@ build:
 	@echo "Created packages in dist/:"
 	@ls -lh dist/ | tail -n +2 | awk '{printf "  %-40s %10s\n", $$9, $$5}'
 	@echo ""
-	@echo "✅ Distribution packages built successfully!"
+	@echo "Distribution packages built successfully!"
 	@echo ""
 	@echo "To install locally:"
 	@echo "  pip install dist/wipeit-$$(grep '^version' pyproject.toml | cut -d'"' -f2)-py3-none-any.whl"
