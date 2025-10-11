@@ -449,6 +449,44 @@ class TestDeviceDetector(unittest.TestCase):
             self.assertIn('📌 Mounted partitions:', str(calls[1]))
             self.assertIn('/dev/sdb1 -> /mnt/usb', str(calls[2]))
 
+    @patch('device_detector.subprocess.check_output')
+    def test_get_unique_id(self, mock_check_output):
+        """Test get_unique_id method returns device identifiers."""
+        udev_output = b"""ID_MODEL=Samsung_SSD_860_EVO
+ID_SERIAL_SHORT=S3Z5NB0K123456A
+"""
+        mock_check_output.return_value = udev_output
+        detector = device_detector.DeviceDetector('/dev/sdb')
+
+        # Mock get_size to avoid actual device access
+        with patch.object(detector, 'get_size', return_value=500107862016):
+            unique_id = detector.get_unique_id()
+
+        self.assertIsInstance(unique_id, dict)
+        self.assertEqual(unique_id['serial'], 'S3Z5NB0K123456A')
+        self.assertEqual(unique_id['model'], 'Samsung_SSD_860_EVO')
+        self.assertEqual(unique_id['size'], 500107862016)
+        # Should only have 3 keys: serial, model, size
+        self.assertEqual(len(unique_id), 3)
+
+    @patch('device_detector.subprocess.check_output')
+    def test_get_unique_id_missing_fields(self, mock_check_output):
+        """Test get_unique_id when some fields are missing."""
+        udev_output = b"""ID_MODEL=Generic_Drive
+"""
+        mock_check_output.return_value = udev_output
+        detector = device_detector.DeviceDetector('/dev/sdb')
+
+        with patch.object(detector, 'get_size', return_value=1000000000):
+            unique_id = detector.get_unique_id()
+
+        self.assertIsInstance(unique_id, dict)
+        self.assertEqual(unique_id['model'], 'Generic_Drive')
+        self.assertIsNone(unique_id['serial'])
+        self.assertEqual(unique_id['size'], 1000000000)
+        # Should only have 3 keys: serial, model, size
+        self.assertEqual(len(unique_id), 3)
+
 
 if __name__ == '__main__':
     unittest.main()

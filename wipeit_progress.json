@@ -1,23 +1,28 @@
 {
   "device": "/dev/sdb",
-  "written": 0,
+  "written": 27367833600,
   "total_size": 320072933376,
-  "progress_percent": 0.0,
-  "chunk_size": 104857600,
-  "timestamp": 1760220658.8201365,
+  "progress_percent": 8.550499197584484,
+  "chunk_size": 10485760,
+  "timestamp": 1760225709.2646694,
   "pretest_results": {
     "speeds": [
-      54.57295787153306,
-      47.056695842919666,
-      33.397243199268594
+      54.51373928698754,
+      47.439316516179716,
+      33.77035967979259
     ],
-    "average_speed": 45.0089656379071,
-    "speed_variance": 21.17571467226447,
+    "average_speed": 45.24113849431995,
+    "speed_variance": 20.743379607194946,
     "analysis": {
       "recommended_algorithm": "small_chunk",
       "reason": "Low average speed - small chunks for better responsiveness"
     },
     "recommended_algorithm": "small_chunk",
     "reason": "Low average speed - small chunks for better responsiveness"
+  },
+  "device_id": {
+    "serial": "VFM201R2E81GYN",
+    "model": "Hitachi_HDT725032VLA360",
+    "size": 320072933376
   }
 }

@@ -8,10 +8,10 @@ import unittest
 from unittest.mock import Mock, mock_open, patch
 
 from global_constants import (
-    GB_MILESTONE_THRESHOLD,
     GIGABYTE,
     MAX_SMALL_CHUNK_SIZE,
     MEGABYTE,
+    PROGRESS_SAVE_THRESHOLD,
     TEST_CHUNK_SIZE_100MB,
     TEST_DEVICE_SIZE_100GB,
     TEST_DEVICE_SIZE_100MB,
@@ -374,7 +374,7 @@ class TestStandardStrategy(unittest.TestCase):
                                          mock_file):
         """Test wipe calls progress callback at milestones."""
         device_size = 3 * GIGABYTE
-        chunk_size = GB_MILESTONE_THRESHOLD
+        chunk_size = PROGRESS_SAVE_THRESHOLD
 
         mock_time.return_value = 1000.0
         mock_file_handle = mock_file.return_value.__enter__.return_value
@@ -386,7 +386,9 @@ class TestStandardStrategy(unittest.TestCase):
 
         strategy.wipe()
 
-        self.assertEqual(callback.call_count, 3)
+        # Callbacks trigger every PROGRESS_SAVE_THRESHOLD bytes
+        expected_callbacks = device_size // PROGRESS_SAVE_THRESHOLD
+        self.assertEqual(callback.call_count, expected_callbacks)
 
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')

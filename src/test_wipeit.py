@@ -221,6 +221,196 @@ class TestProgressFileFunctions(unittest.TestCase):
         # Should not raise an exception
         wipeit.clear_progress('/dev/nonexistent')
 
+    def test_progress_percent_calculation(self):
+        """Test that progress_percent is correctly calculated when saving."""
+        test_cases = [
+            (0, TEST_TOTAL_SIZE_4GB, 0.0, "0% progress"),
+            (TEST_TOTAL_SIZE_4GB // 4, TEST_TOTAL_SIZE_4GB,
+             25.0, "25% progress"),
+            (TEST_TOTAL_SIZE_4GB // 2, TEST_TOTAL_SIZE_4GB,
+             50.0, "50% progress"),
+            (3 * TEST_TOTAL_SIZE_4GB // 4, TEST_TOTAL_SIZE_4GB,
+             75.0, "75% progress"),
+            (TEST_TOTAL_SIZE_4GB, TEST_TOTAL_SIZE_4GB,
+             100.0, "100% progress"),
+            (50 * GIGABYTE, 100 * GIGABYTE, 50.0, "50GB/100GB"),
+            (1 * GIGABYTE, 10 * GIGABYTE, 10.0, "1GB/10GB"),
+        ]
+
+        for written, total, expected_percent, description in test_cases:
+            with self.subTest(case=description):
+                wipeit.save_progress(
+                    self.test_device, written, total, TEST_CHUNK_SIZE_100MB)
+
+                with open(self.test_progress_file, 'r') as f:
+                    data = json.load(f)
+
+                self.assertAlmostEqual(
+                    data['progress_percent'], expected_percent, places=2,
+                    msg=f"Progress percent mismatch for {description}: "
+                        f"expected {expected_percent}%, "
+                        f"got {data['progress_percent']}%")
+
+                # Also verify written and total_size are saved correctly
+                self.assertEqual(
+                    data['written'], written,
+                    msg=f"Written bytes mismatch for {description}")
+                self.assertEqual(
+                    data['total_size'], total,
+                    msg=f"Total size mismatch for {description}")
+
+    def test_save_progress_with_device_id(self):
+        """Test saving progress with device unique identifier."""
+        device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+
+        wipeit.save_progress(
+            self.test_device, TEST_WRITTEN_1GB, TEST_TOTAL_SIZE_4GB,
+            TEST_CHUNK_SIZE_100MB, None, device_id)
+
+        with open(self.test_progress_file, 'r') as f:
+            data = json.load(f)
+
+        self.assertIn('device_id', data)
+        self.assertEqual(data['device_id']['serial'], 'TEST123456')
+        self.assertEqual(data['device_id']['model'], 'TestDrive_Model')
+        self.assertEqual(data['device_id']['size'], TEST_TOTAL_SIZE_4GB)
+
+    @patch('wipeit.DeviceDetector')
+    def test_load_progress_verifies_device_id(self, mock_detector_class):
+        """Test that load_progress verifies device identity."""
+        device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+
+        # Create progress file with device_id
+        test_data = {
+            'device': self.test_device,
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0,
+            'device_id': device_id
+        }
+
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(test_data, f)
+
+        # Mock DeviceDetector to return matching ID
+        mock_detector = MagicMock()
+        mock_detector.get_unique_id.return_value = device_id
+        mock_detector_class.return_value = mock_detector
+
+        # Should load successfully
+        result = wipeit.load_progress(self.test_device)
+        self.assertIsNotNone(result)
+        self.assertEqual(result['device_id']['serial'], 'TEST123456')
+
+    @patch('wipeit.sys.exit')
+    @patch('wipeit.DeviceDetector')
+    def test_load_progress_rejects_mismatched_serial(
+            self, mock_detector_class, mock_exit):
+        """Test that load_progress halts on mismatched serial number."""
+        saved_device_id = {
+            'serial': 'ORIGINAL123',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+
+        current_device_id = {
+            'serial': 'DIFFERENT456',  # Different serial!
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+
+        # Create progress file with original device_id
+        test_data = {
+            'device': self.test_device,
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0,
+            'device_id': saved_device_id
+        }
+
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(test_data, f)
+
+        # Mock DeviceDetector to return different serial
+        mock_detector = MagicMock()
+        mock_detector.get_unique_id.return_value = current_device_id
+        mock_detector_class.return_value = mock_detector
+
+        # Capture output to verify error message
+        with patch('builtins.print') as mock_print:
+            wipeit.load_progress(self.test_device)
+
+        # Should call sys.exit(1) to halt execution
+        mock_exit.assert_called_once_with(1)
+
+        # Verify error message was displayed
+        output = ' '.join([str(call) for call in mock_print.call_args_list])
+        self.assertIn('DEVICE MISMATCH ERROR', output)
+        self.assertIn('ORIGINAL123', output)
+        self.assertIn('DIFFERENT456', output)
+        self.assertIn('WHAT TO DO', output)
+
+    @patch('wipeit.sys.exit')
+    @patch('wipeit.DeviceDetector')
+    def test_load_progress_rejects_mismatched_size(
+            self, mock_detector_class, mock_exit):
+        """Test that load_progress halts on mismatched device size."""
+        saved_device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+
+        current_device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB * 2  # Different size!
+        }
+
+        # Create progress file
+        test_data = {
+            'device': self.test_device,
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0,
+            'device_id': saved_device_id
+        }
+
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(test_data, f)
+
+        # Mock DeviceDetector to return different size
+        mock_detector = MagicMock()
+        mock_detector.get_unique_id.return_value = current_device_id
+        mock_detector_class.return_value = mock_detector
+
+        # Capture output to verify error message
+        with patch('builtins.print') as mock_print:
+            wipeit.load_progress(self.test_device)
+
+        # Should call sys.exit(1) to halt execution
+        mock_exit.assert_called_once_with(1)
+
+        # Verify error message was displayed
+        output = ' '.join([str(call) for call in mock_print.call_args_list])
+        self.assertIn('DEVICE MISMATCH ERROR', output)
+        self.assertIn('size does not match', output)
+        self.assertIn('WHAT TO DO', output)
+
 
 class TestResumeFileFunctions(unittest.TestCase):
     """Test resume file detection and display functions."""
@@ -399,7 +589,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.3.1', output)
+        self.assertIn('wipeit 1.4.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -552,6 +742,116 @@ class TestIntegration(unittest.TestCase):
         self.assertNotIn(
             'Use --resume flag to continue', output,
             "Should not see resume instruction when no progress")
+
+    @patch('sys.argv', ['wipeit.py', '--resume', '/dev/sdb'])
+    @patch('os.geteuid', return_value=0)
+    @patch('sys.exit')
+    @patch('wipeit.DeviceDetector')
+    def test_resume_with_mismatched_device_halts(
+            self, mock_detector_class, mock_exit, mock_geteuid):
+        """Test that resume with mismatched device halts with clear error."""
+        # Create progress file with device_id
+        saved_device_id = {
+            'serial': 'ORIGINAL_SERIAL_123',
+            'model': 'Original_SSD_Model',
+            'size': 1000 * 1024 * 1024 * 1024  # 1TB
+        }
+
+        progress_data = {
+            'device': '/dev/sdb',
+            'written': 500 * 1024 * 1024 * 1024,  # 500GB
+            'total_size': 1000 * 1024 * 1024 * 1024,  # 1TB
+            'chunk_size': 100 * 1024 * 1024,
+            'timestamp': time.time(),
+            'progress_percent': 50.0,
+            'device_id': saved_device_id
+        }
+
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(progress_data, f)
+
+        # Mock DeviceDetector to return DIFFERENT device
+        mock_detector = MagicMock()
+        mock_detector.get_unique_id.return_value = {
+            'serial': 'DIFFERENT_SERIAL_456',  # Different!
+            'model': 'Different_SSD_Model',
+            'size': 1000 * 1024 * 1024 * 1024
+        }
+        mock_detector_class.return_value = mock_detector
+
+        # Capture output
+        from io import StringIO
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            wipeit.main()
+
+        output = mock_stdout.getvalue()
+
+        # CRITICAL: Program must halt with sys.exit(1)
+        mock_exit.assert_called_with(1)
+
+        # Verify error message is shown
+        self.assertIn('DEVICE MISMATCH ERROR', output,
+                      "Must show device mismatch error")
+        self.assertIn('ORIGINAL_SERIAL_123', output,
+                      "Must show expected serial")
+        self.assertIn('DIFFERENT_SERIAL_456', output,
+                      "Must show current serial")
+        self.assertIn('WHAT TO DO', output,
+                      "Must provide instructions to user")
+        self.assertIn('rm wipeit_progress.json', output,
+                      "Must tell user how to clear progress")
+
+    @patch('wipeit.DeviceDetector')
+    @patch('wipeit.get_block_device_size')
+    @patch('wipeit.StandardStrategy')
+    @patch('sys.exit')
+    def test_keyboard_interrupt_saves_actual_progress(
+            self, mock_exit, mock_strategy_class, mock_get_size,
+            mock_detector_class):
+        """Test that KeyboardInterrupt saves actual progress from strategy."""
+        # Setup mocks
+        mock_get_size.return_value = TEST_TOTAL_SIZE_4GB
+
+        # Mock detector
+        mock_detector = MagicMock()
+        mock_detector.detect_type.return_value = ('SSD', 'HIGH', ['Test'])
+        mock_detector.get_unique_id.return_value = {
+            'serial': 'TEST123',
+            'model': 'TestModel',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+        mock_detector_class.return_value = mock_detector
+
+        # Mock strategy that has written 1GB when interrupted
+        mock_strategy = MagicMock()
+        mock_strategy.written = TEST_WRITTEN_1GB  # 1GB actually written!
+
+        # Make strategy.wipe() raise KeyboardInterrupt
+        mock_strategy.wipe.side_effect = KeyboardInterrupt()
+        mock_strategy_class.return_value = mock_strategy
+
+        # Try to wipe (will be interrupted)
+        try:
+            wipeit.wipe_device(
+                self.test_device, chunk_size=TEST_CHUNK_SIZE_100MB)
+        except SystemExit:
+            pass  # Expected due to mocked sys.exit
+
+        # Verify sys.exit(1) was called
+        mock_exit.assert_called_with(1)
+
+        # Load the saved progress
+        with open(self.test_progress_file, 'r') as f:
+            data = json.load(f)
+
+        # CRITICAL: Progress should be 1GB (strategy.written), NOT 0!
+        self.assertEqual(
+            data['written'], TEST_WRITTEN_1GB,
+            "Bug: KeyboardInterrupt should save strategy.written (1GB), "
+            f"not 0! Got: {data['written']}")
+        self.assertEqual(
+            data['progress_percent'], 25.0,
+            f"Bug: Should be 25% progress, got: {data['progress_percent']}%")
 
     def test_progress_workflow(self):
         """Test the complete progress save/load/clear workflow."""

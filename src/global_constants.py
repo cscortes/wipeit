@@ -2,8 +2,9 @@
 """
 Global constants for wipeit - Secure device wiping utility.
 
-This module contains all application-wide constants used throughout the codebase.
-All constants follow the ALL_CAPS naming convention for easy identification.
+This module contains all application-wide constants used throughout the
+codebase. All constants follow the ALL_CAPS naming convention for easy
+identification.
 """
 
 # Size multipliers for parsing size strings
@@ -37,8 +38,8 @@ LOW_SPEED_THRESHOLD_MBPS = 50  # MB/s
 HIGH_VARIANCE_THRESHOLD_MBPS = 100  # MB/s
 
 # Progress milestone thresholds
-MILESTONE_INCREMENT_PERCENT = 5  # 5% increments
-GB_MILESTONE_THRESHOLD = GIGABYTE  # 1GB milestone threshold
+MILESTONE_INCREMENT_PERCENT = 5  # 5% increments for display
+PROGRESS_SAVE_THRESHOLD = 100 * MEGABYTE  # Save progress every 100MB
 
 # Test constants
 TEST_DEVICE_SIZE_100MB = 100 * MEGABYTE
@@ -67,4 +68,3 @@ TEST_TIME_24_HOURS_PLUS_1_SECOND = 24 * 3600 + 1
 TEST_MILESTONE_5_PERCENT = 5
 TEST_MILESTONE_10_PERCENT = 10
 TEST_MILESTONE_50_PERCENT = 50
-

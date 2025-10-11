@@ -11,11 +11,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-10-11
+
+### Fixed
+- **Critical: Keyboard interrupt progress loss**: Fixed bug where pressing Ctrl+C saved 0 bytes instead of actual progress
+  - Exception handler now retrieves `strategy.written` before saving
+  - Added `if 'strategy' in locals()` check for safety
+  - Applies to both KeyboardInterrupt and general exceptions
+- **Progress file flush**: Added immediate disk flush (`os.fsync()`) to ensure progress survives crashes
+  - Python buffer flush + OS kernel flush for guaranteed persistence
+  - Critical for interrupt and crash safety
+- **Progress save frequency**: Increased from every 1GB to every 100MB
+  - 10x improvement in progress tracking accuracy
+  - Maximum lag reduced from 1GB to 100MB
+- **Device mismatch on resume**: Program now halts immediately (sys.exit(1)) with clear error message when device ID doesn't match
+  - Shows expected vs current serial/model/size
+  - Provides step-by-step recovery instructions
+  - Prevents accidental wiping of wrong drive
+- **Test failure**: Fixed `test_wipe_with_progress_callback` to calculate expected callbacks dynamically
+
+### Added
+- **Enhanced resume diagnostics**: Added debug output to investigate resume detection issues
+  - Full exception traceback in load_progress()
+  - Dedicated RESUME STATUS section showing found/not-found status
+  - Enhanced device identity warnings
+- **Device unique ID verification**: Resume operations now verify device identity using serial, model, and size
+  - `DeviceDetector.get_unique_id()` method added
+  - Verifies correct drive before resuming wipe
+  - Prevents accidental data loss from device swaps
+- **Comprehensive test coverage**: Added 8 new tests for keyboard interrupt and device verification
+  - `test_keyboard_interrupt_saves_actual_progress`: Verifies interrupt saves actual progress
+  - `test_resume_with_mismatched_device_halts`: Integration test for device mismatch
+  - `test_save_progress_with_device_id`: Ensures device_id is saved
+  - `test_load_progress_verifies_device_id`: Loads and verifies matching ID
+  - `test_load_progress_rejects_mismatched_serial`: Halts on serial mismatch
+  - `test_load_progress_rejects_mismatched_size`: Halts on size mismatch
+  - `test_get_unique_id`: Gets device identifiers
+  - `test_get_unique_id_missing_fields`: Handles missing identifiers
+
 ### Changed
 - **⚠️ BREAKING**: Progress filename is now always `wipeit_progress.json` instead of `wipeit_progress_[device].json`
   - Simplifies progress tracking with single consistent filename
   - Note: Only one device can have active progress at a time
   - Old device-specific progress files will be ignored
+- **Constant renamed**: `GB_MILESTONE_THRESHOLD` → `PROGRESS_SAVE_THRESHOLD` for semantic clarity
+  - Old name was misleading (value is 100MB, not GB)
+  - New name is unit-agnostic and semantically accurate
+- **Progress percent calculation**: Now accurately calculated and saved during interrupts
+- **Icon usage**: Removed most decorative icons, keeping only `⚠️` and `🚨` for critical warnings
+  - Added strict icon usage guidelines to PROGRAMMING_STYLE_GUIDE.md
+- **Test count**: Increased to 157 unit tests (up from 149)
+- **Test coverage**: Maintained at 95%
+
+### Technical
+- **File I/O**: All progress saves now use `f.flush()` + `os.fsync()` for immediate disk persistence
+- **Error handling**: Enhanced exception messages with full tracebacks for debugging
+- **Safety improvements**: Multiple layers of verification prevent wrong-device wipes
 
 ## [1.3.1] - 2025-10-11
 

@@ -13,11 +13,11 @@ import time
 from abc import ABC, abstractmethod
 
 from global_constants import (
-    GB_MILESTONE_THRESHOLD,
     GIGABYTE,
     MAX_SMALL_CHUNK_SIZE,
     MEGABYTE,
     MILESTONE_INCREMENT_PERCENT,
+    PROGRESS_SAVE_THRESHOLD,
 )
 
 
@@ -222,7 +222,7 @@ class StandardStrategy(WipeStrategy):
 
             self._display_progress()
 
-            if self.written % GB_MILESTONE_THRESHOLD == 0:
+            if self.written % PROGRESS_SAVE_THRESHOLD == 0:
                 self._save_progress_checkpoint()
 
         print()
@@ -363,7 +363,7 @@ class AdaptiveStrategy(WipeStrategy):
 
             self._display_progress(current_speed=chunk_speed)
 
-            if self.written % GB_MILESTONE_THRESHOLD == 0:
+            if self.written % PROGRESS_SAVE_THRESHOLD == 0:
                 self._save_progress_checkpoint()
 
         print()

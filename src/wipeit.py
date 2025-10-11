@@ -117,8 +117,18 @@ def get_progress_file(device):
 
 
 def save_progress(device, written, total_size,
-                  chunk_size, pretest_results=None):
-    """Save wipe progress to file."""
+                  chunk_size, pretest_results=None, device_id=None):
+    """
+    Save wipe progress to file.
+
+    Args:
+        device: Device path (e.g., '/dev/sdb')
+        written: Bytes written so far
+        total_size: Total device size in bytes
+        chunk_size: Chunk size used for wiping
+        pretest_results: Optional pretest results
+        device_id: Optional device unique identifiers (serial, model, etc.)
+    """
     progress_file = get_progress_file(device)
     progress_percent = (written / total_size) * 100 if total_size > 0 else 0
     progress_data = {
@@ -128,18 +138,29 @@ def save_progress(device, written, total_size,
         'progress_percent': progress_percent,
         'chunk_size': chunk_size,
         'timestamp': time.time(),
-        'pretest_results': pretest_results
+        'pretest_results': pretest_results,
+        'device_id': device_id
     }
 
     try:
         with open(progress_file, 'w') as f:
             json.dump(progress_data, f, indent=2)
+            f.flush()  # Flush Python buffer
+            os.fsync(f.fileno())  # Flush OS buffer to disk immediately
     except Exception as e:
         print(f"Warning: Could not save progress: {e}")
 
 
 def load_progress(device):
-    """Load saved progress from file."""
+    """
+    Load saved progress from file and verify device identity.
+
+    Args:
+        device: Device path (e.g., '/dev/sdb')
+
+    Returns:
+        dict: Progress data if valid, None otherwise
+    """
     progress_file = get_progress_file(device)
 
     if not os.path.exists(progress_file):
@@ -155,14 +176,88 @@ def load_progress(device):
             print("Progress file is older than 24 hours, ignoring.")
             return None
 
-        # Verify device matches
+        # Verify device path matches
         if progress_data['device'] != device:
             print("Progress file is for a different device, ignoring.")
             return None
 
+        # Verify device identity if available
+        if 'device_id' in progress_data and progress_data['device_id']:
+            try:
+                detector = DeviceDetector(device)
+                current_id = detector.get_unique_id()
+                saved_id = progress_data['device_id']
+
+                # Check serial number (most unique identifier)
+                if (saved_id.get('serial') and current_id.get('serial') and
+                        saved_id['serial'] != current_id['serial']):
+                    print("\n" + "=" * 70)
+                    print("🚨 DEVICE MISMATCH ERROR")
+                    print("=" * 70)
+                    print("Cannot resume: Device serial number does not "
+                          "match!")
+                    print()
+                    print(f"Expected serial: {saved_id['serial']}")
+                    print(f"Current serial:  {current_id['serial']}")
+                    print()
+                    if saved_id.get('model'):
+                        print(f"Expected model: {saved_id['model']}")
+                    if current_id.get('model'):
+                        print(f"Current model:  {current_id['model']}")
+                    print()
+                    print("⚠️  This is a DIFFERENT physical drive!")
+                    print()
+                    print("WHAT TO DO:")
+                    print("  1. If this is the correct drive, the progress "
+                          "file is from")
+                    print("     a different device. Start a fresh wipe:")
+                    print(f"     sudo wipeit {device}")
+                    print()
+                    print("  2. If you want to resume the ORIGINAL drive:")
+                    print("     - Reconnect the original drive")
+                    print("     - Verify it appears as the same device path")
+                    print("     - Run: sudo wipeit --resume <device>")
+                    print()
+                    print("  3. To clear this progress file and start fresh:")
+                    print("     rm wipeit_progress.json")
+                    print("=" * 70)
+                    sys.exit(1)
+
+                # Check size as secondary verification
+                if (saved_id.get('size') and current_id.get('size') and
+                        saved_id['size'] != current_id['size']):
+                    print("\n" + "=" * 70)
+                    print("🚨 DEVICE MISMATCH ERROR")
+                    print("=" * 70)
+                    print("Cannot resume: Device size does not match!")
+                    print()
+                    print(f"Expected size: "
+                          f"{saved_id['size'] / (1024**3):.2f} GB")
+                    print(f"Current size:  "
+                          f"{current_id['size'] / (1024**3):.2f} GB")
+                    print()
+                    print("⚠️  This is a DIFFERENT drive or the drive has "
+                          "been repartitioned!")
+                    print()
+                    print("WHAT TO DO:")
+                    print("  1. Verify you have the correct drive connected")
+                    print("  2. To start a fresh wipe on this drive:")
+                    print(f"     sudo wipeit {device}")
+                    print("  3. To clear the old progress file:")
+                    print("     rm wipeit_progress.json")
+                    print("=" * 70)
+                    sys.exit(1)
+
+            except Exception as e:
+                print(f"⚠️  Warning: Could not verify device identity: {e}")
+                print("   Continuing anyway (backwards compatibility)")
+                # Continue anyway - backwards compatibility
+
         return progress_data
     except Exception as e:
-        print(f"Warning: Could not load progress: {e}")
+        print(f"🚨 Error loading progress file: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -259,6 +354,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
 
         detector = DeviceDetector(device)
         disk_type, confidence, details = detector.detect_type()
+        device_id = detector.get_unique_id()
 
         print(f"\nDetected disk type: {disk_type} "
               f"(confidence: {confidence})")
@@ -293,7 +389,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
                 pretest_results = perform_hdd_pretest(device, chunk_size)
                 if pretest_results:
                     save_progress(device, written, size, chunk_size,
-                                  pretest_results)
+                                  pretest_results, device_id)
                 else:
                     print("Pretest failed, using standard algorithm")
 
@@ -308,7 +404,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         def progress_callback(written_bytes, total_bytes, chunk_bytes):
             """Callback for saving progress from strategy."""
             save_progress(device, written_bytes, total_bytes, chunk_bytes,
-                          pretest_results)
+                          pretest_results, device_id)
 
         if algorithm == "adaptive_chunk":
             print("Using adaptive chunk sizing for optimal performance")
@@ -350,14 +446,22 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         print("• Status: Successfully wiped")
 
     except KeyboardInterrupt:
+        # Get actual progress from strategy if it was created
+        if 'strategy' in locals():
+            written = strategy.written
         print("\n\n⚠️  Wipe interrupted by user")
         print(f"• Progress saved: {written / (1024**3):.2f} GB written")
         print("• To resume: run wipeit with --resume flag")
-        save_progress(device, written, size, chunk_size, pretest_results)
+        save_progress(device, written, size, chunk_size, pretest_results,
+                      device_id)
         sys.exit(1)
     except Exception as e:
+        # Get actual progress from strategy if it was created
+        if 'strategy' in locals():
+            written = strategy.written
         print(f"\nError during wipe: {e}")
-        save_progress(device, written, size, chunk_size, pretest_results)
+        save_progress(device, written, size, chunk_size, pretest_results,
+                      device_id)
         sys.exit(1)
 
 
@@ -394,7 +498,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.3.1')
+        version='wipeit 1.4.0')
 
     args = parser.parse_args()
 
@@ -484,12 +588,20 @@ Examples:
 
     # Load progress if resuming
     if args.resume:
+        print("\n" + "=" * 70)
+        print("RESUME STATUS")
+        print("=" * 70)
         progress_data = load_progress(args.device)
         if not progress_data:
-            print("No previous progress found for this device")
+            print("🚨 No previous progress found for this device")
             print("Starting fresh wipe...")
         else:
             percent = progress_data['progress_percent']
+            written_gb = progress_data['written'] / (1024**3)
+            total_gb = progress_data['total_size'] / (1024**3)
+            print("✓ Found previous session")
+            print(f"• Progress: {percent:.2f}% complete")
+            print(f"• Written: {written_gb:.2f} GB / {total_gb:.2f} GB")
             print(f"Resuming wipe from {percent:.2f}% complete")
     else:
         # Clear any existing progress

@@ -61,6 +61,27 @@ class DeviceDetector:
         except Exception:
             return {}
 
+    def get_unique_id(self):
+        """
+        Get unique identifier for the device.
+
+        Returns a dictionary with device identifiers to verify the same
+        physical drive is being used when resuming operations.
+
+        Returns:
+            dict: Dictionary with 'serial', 'model', 'size' keys
+                 (values may be None if not available)
+                 - serial: Most unique identifier (e.g., 'S3Z5NB0K123456A')
+                 - model: Drive model name (e.g., 'Samsung_SSD_860_EVO')
+                 - size: Device size in bytes
+        """
+        props = self.get_device_properties()
+        return {
+            'serial': props.get('ID_SERIAL_SHORT'),
+            'model': props.get('ID_MODEL'),
+            'size': self.get_size() if self.device_path else None
+        }
+
     def detect_type(self):
         """
         Detect storage device type (HDD/SSD/NVMe).

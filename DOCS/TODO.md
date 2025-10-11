@@ -23,10 +23,6 @@ Based on current functionality, consider creating the following classes:
 - Methods: `run_pretest()`, `analyze_results()`, `recommend_algorithm()`
 - Benefits: Isolated pretest logic, reusable
 
-4. WipeStrategy Class (Abstract)
-- Base class for different wiping strategies
-- Subclasses: `StandardStrategy`, `AdaptiveStrategy`, `SmallChunkStrategy`
-- Benefits: Strategy pattern for algorithm selection, extensible
 
 5. DeviceWiper Class
 - Main orchestration class
