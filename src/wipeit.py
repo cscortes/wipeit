@@ -348,6 +348,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
     size = 0
     start_time = time.time()
     pretest_results = None
+    device_id = None  # Initialize to None for exception handlers
 
     try:
         size = get_block_device_size(device)

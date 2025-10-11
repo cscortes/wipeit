@@ -746,9 +746,10 @@ class TestIntegration(unittest.TestCase):
     @patch('sys.argv', ['wipeit.py', '--resume', '/dev/sdb'])
     @patch('os.geteuid', return_value=0)
     @patch('sys.exit')
+    @patch('builtins.input', return_value='n')  # Mock user saying 'no'
     @patch('wipeit.DeviceDetector')
     def test_resume_with_mismatched_device_halts(
-            self, mock_detector_class, mock_exit, mock_geteuid):
+            self, mock_detector_class, mock_input, mock_exit, mock_geteuid):
         """Test that resume with mismatched device halts with clear error."""
         # Create progress file with device_id
         saved_device_id = {
@@ -777,6 +778,7 @@ class TestIntegration(unittest.TestCase):
             'model': 'Different_SSD_Model',
             'size': 1000 * 1024 * 1024 * 1024
         }
+        mock_detector.is_mounted.return_value = (False, [])  # Not mounted
         mock_detector_class.return_value = mock_detector
 
         # Capture output
@@ -833,7 +835,7 @@ class TestIntegration(unittest.TestCase):
         # Try to wipe (will be interrupted)
         try:
             wipeit.wipe_device(
-                self.test_device, chunk_size=TEST_CHUNK_SIZE_100MB)
+                '/dev/sdb', chunk_size=TEST_CHUNK_SIZE_100MB)
         except SystemExit:
             pass  # Expected due to mocked sys.exit
 
@@ -1045,13 +1047,24 @@ class TestHDDPretest(unittest.TestCase):
 class TestWipeDeviceIntegration(unittest.TestCase):
     """Test wipe_device function with pretest integration."""
 
+    @patch('wipeit.DeviceDetector')
     @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('time.time')
     def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_file,
-                                             mock_size):
+                                             mock_size, mock_detector_class):
         """Test wipe_device with adaptive chunk - CRITICAL BUG TEST."""
         mock_size.return_value = TEST_DEVICE_SIZE_100MB
+
+        # Mock DeviceDetector
+        mock_detector = MagicMock()
+        mock_detector.detect_type.return_value = ('HDD', 'HIGH', ['Test'])
+        mock_detector.get_unique_id.return_value = {
+            'serial': 'TEST123',
+            'model': 'TestModel',
+            'size': TEST_DEVICE_SIZE_100MB
+        }
+        mock_detector_class.return_value = mock_detector
 
         mock_time.return_value = 1000.0
         mock_file.return_value.__enter__.return_value.seek = MagicMock()
@@ -1087,13 +1100,23 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                             else:
                                 raise
 
+    @patch('wipeit.DeviceDetector')
     @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('time.time')
-    def test_adaptive_chunk_sizing_calculations(self, mock_time, mock_file,
-                                                mock_size):
+    def test_adaptive_chunk_sizing_calculations(
+            self, mock_time, mock_file, mock_size, mock_detector_class):
         """Test that adaptive chunk sizing produces integers."""
         mock_size.return_value = 100 * 1024 * 1024
+
+        # Mock DeviceDetector
+        mock_detector = MagicMock()
+        mock_detector.detect_type.return_value = ('SSD', 'HIGH', ['Test'])
+        mock_detector.get_unique_id.return_value = {
+            'serial': 'TEST123', 'model': 'TestModel',
+            'size': 100 * 1024 * 1024
+        }
+        mock_detector_class.return_value = mock_detector
 
         mock_time.return_value = 1000.0
         mock_file.return_value.__enter__.return_value.seek = MagicMock()

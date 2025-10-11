@@ -50,6 +50,7 @@ class WipeStrategy(ABC):
         self.start_time = time.time()
         self.pretest_results = pretest_results
         self.progress_callback = progress_callback
+        self.written_since_last_save = 0  # Track bytes since last checkpoint
         # Calculate last milestone based on start position for resume support
         if total_size > 0:
             current_percent = (start_position / total_size) * 100
@@ -160,6 +161,7 @@ class WipeStrategy(ABC):
         if self.progress_callback:
             self.progress_callback(self.written, self.total_size,
                                    self.chunk_size)
+            self.written_since_last_save = 0  # Reset counter after save
 
     def _write_chunk(self, chunk_data):
         """
@@ -219,10 +221,11 @@ class StandardStrategy(WipeStrategy):
             self._write_chunk(chunk_data)
 
             self.written += current_chunk_size
+            self.written_since_last_save += current_chunk_size
 
             self._display_progress()
 
-            if self.written % PROGRESS_SAVE_THRESHOLD == 0:
+            if self.written_since_last_save >= PROGRESS_SAVE_THRESHOLD:
                 self._save_progress_checkpoint()
 
         print()
@@ -360,10 +363,11 @@ class AdaptiveStrategy(WipeStrategy):
                 chunk_speed = 0
 
             self.written += current_chunk_size
+            self.written_since_last_save += current_chunk_size
 
             self._display_progress(current_speed=chunk_speed)
 
-            if self.written % PROGRESS_SAVE_THRESHOLD == 0:
+            if self.written_since_last_save >= PROGRESS_SAVE_THRESHOLD:
                 self._save_progress_checkpoint()
 
         print()
