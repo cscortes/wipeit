@@ -35,12 +35,19 @@ help:
 	@echo "                   - Safety: Checks for known vulnerabilities in dependencies"
 	@echo "                   - Ensures code security best practices"
 	@echo ""
+	@echo "  clean_files    - Clean invisible characters from all relevant files"
+	@echo "                   - Removes problematic invisible characters from code/docs"
+	@echo "                   - Processes Python, Markdown, YAML, JSON, and other text files"
+	@echo "                   - Creates backup files (.bak) for safety"
+	@echo "                   - Use to clean AI-generated content artifacts"
+	@echo ""
 	@echo "Usage examples:"
 	@echo "  make           # Show this help"
 	@echo "  make info      # Show this help"
 	@echo "  make tests     # Run all tests and style checks"
 	@echo "  make lint      # Run only style checks"
 	@echo "  make security  # Run security scans"
+	@echo "  make clean_files  # Clean invisible characters from files"
 	@echo "  make pre-git-prep  # Fix code style before committing"
 
 # Run comprehensive test suite including flake8 style checks
@@ -112,3 +119,14 @@ security:
 	@echo ""
 	@echo "✅ Security scans completed"
 	@echo "💡 Note: Low severity issues in system tools are expected"
+
+# Clean invisible characters from all relevant files
+clean_files:
+	@echo "Cleaning invisible characters from files..."
+	@echo ""
+	@echo "=== Running Invisible Character Cleaner ==="
+	@echo "Processing Python, Markdown, YAML, and other text files..."
+	@python3 scripts/clean_invisible_chars.py . --clean --extensions py md yml yaml txt json toml cfg ini sh bash
+	@echo ""
+	@echo "✅ Invisible character cleaning completed"
+	@echo "💡 Backup files (.bak) created for safety"
