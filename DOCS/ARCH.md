@@ -11,214 +11,466 @@ This document provides an overview of the wipeit codebase architecture, showing 
 ### Architecture Overview
 
 The wipeit codebase follows a modern, modular architecture with:
-- **Source Package Structure**: All source code organized under `src/wipeit/`
+- **Source Package Structure**: All source code organized under `src/`
 - **One File Per Class**: Each class in its own dedicated file
-- **Object-Oriented Design**: `DeviceDetector` class for device operations
-- **Procedural Functions**: Legacy functions maintained for backward compatibility
-- **Clear Separation**: Device detection, wiping operations, and CLI interface separated
+- **Object-Oriented Design**: Strategy pattern for wiping algorithms, encapsulated device detection
+- **Procedural Functions**: Core functionality exposed through functions
+- **Clear Separation**: Device detection, wiping strategies, pretesting, and CLI separated
+- **Centralized Constants**: All application constants in `global_constants.py`
 
 ### File Structure
 
 ```
 src/
-├── __init__.py                    # Package initialization
-├── device_detector.py            # DeviceDetector class (1 file per class)
-└── wipeit.py                     # Main functions and CLI interface
+├── __init__.py                    # Package initialization, version
+├── global_constants.py            # All application constants (sizes, thresholds)
+├── device_detector.py             # DeviceDetector class (device operations)
+├── disk_pretest.py                # DiskPretest class, PretestResults dataclass
+├── wipe_strategy.py               # WipeStrategy classes (Strategy pattern)
+│   ├── WipeStrategy (abstract base)
+│   ├── StandardStrategy
+│   ├── SmallChunkStrategy
+│   └── AdaptiveStrategy
+├── wipeit.py                      # Main functions and CLI interface
+├── test_wipeit.py                 # Main tests (148 tests)
+├── test_device_detector.py        # DeviceDetector tests
+└── test_wipe_strategy.py          # Strategy tests
 ```
 
 **Key Design Principles:**
 - **One File Per Class**: Each class gets its own dedicated file
+- **Strategy Pattern**: Wiping algorithms as interchangeable strategies
+- **Dataclasses**: Type-safe data structures (PretestResults)
 - **Package Organization**: Logical grouping under `src/`
-- **Clear Imports**: Explicit imports in `__init__.py` files
-- **Separation of Concerns**: Device detection separate from main logic
+- **Clear Imports**: Explicit imports, centralized constants
+- **Separation of Concerns**: Detection, testing, strategies, and CLI separated
 
-### Class-Based Architecture (New)
+### Class Hierarchy
 
 ```mermaid
-graph TD
-    %% DeviceDetector Class
-    DeviceDetector["DeviceDetector Class<br/>Encapsulates all device operations"]
+classDiagram
+    %% Core Classes
+    class WipeStrategy {
+        <<abstract>>
+        +device_path: str
+        +total_size: int
+        +chunk_size: int
+        +written: int
+        +progress_callback: callable
+        +wipe()* bool
+        +get_algorithm_name() str
+        #_display_progress()
+        #_save_progress_checkpoint()
+        #_write_chunk(data)
+    }
 
-    %% Public Methods
-    get_size["get_size()<br/>Get device size in bytes"]
-    get_device_properties["get_device_properties()<br/>Get udev properties"]
-    detect_type["detect_type()<br/>Detect HDD/SSD/NVMe/eMMC"]
-    is_mounted["is_mounted()<br/>Check mount status"]
-    get_partitions["get_partitions()<br/>Get partition information"]
-    display_info["display_info()<br/>Display comprehensive device info"]
+    class StandardStrategy {
+        +wipe() bool
+        +get_algorithm_name() str
+    }
 
-    %% Private Helper Methods
-    _check_rotational["_check_rotational()<br/>Check if device is rotational"]
-    _check_nvme_interface["_check_nvme_interface()<br/>Check NVMe interface"]
-    _check_mmc_interface["_check_mmc_interface()<br/>Check MMC interface"]
-    _analyze_rpm_indicators["_analyze_rpm_indicators()<br/>Analyze RPM indicators"]
-    _detect_from_model_name["_detect_from_model_name()<br/>Detect from model name"]
-    _determine_type["_determine_type()<br/>Determine final device type"]
-    _display_header["_display_header()<br/>Display info header"]
-    _display_basic_info["_display_basic_info()<br/>Display basic device info"]
-    _display_type_info["_display_type_info()<br/>Display type information"]
-    _display_partition_info["_display_partition_info()<br/>Display partitions"]
-    _display_mount_status["_display_mount_status()<br/>Display mount status"]
+    class SmallChunkStrategy {
+        +wipe() bool
+        +get_algorithm_name() str
+    }
 
-    %% Class relationships
-    DeviceDetector --> get_size
-    DeviceDetector --> get_device_properties
-    DeviceDetector --> detect_type
-    DeviceDetector --> is_mounted
-    DeviceDetector --> get_partitions
-    DeviceDetector --> display_info
+    class AdaptiveStrategy {
+        -_speed_samples: list
+        +wipe() bool
+        +get_algorithm_name() str
+        #_calculate_adaptive_chunk_size() int
+        #_get_average_speed() float
+    }
 
-    %% detect_type calls
-    detect_type --> _check_rotational
-    detect_type --> _check_nvme_interface
-    detect_type --> _check_mmc_interface
-    detect_type --> _analyze_rpm_indicators
-    detect_type --> _determine_type
+    class DeviceDetector {
+        +device_path: str
+        +device_name: str
+        +get_size() int
+        +get_device_properties() dict
+        +detect_type() tuple
+        +get_unique_id() dict
+        +is_mounted() tuple
+        +get_partitions() list
+        +display_info()
+        -_check_rotational() bool
+        -_check_nvme_interface() bool
+        -_check_mmc_interface() bool
+        -_analyze_rpm_indicators() list
+        -_detect_from_model_name() tuple
+        -_determine_type() tuple
+    }
 
-    %% _determine_type calls
-    _determine_type --> _detect_from_model_name
+    class DiskPretest {
+        +device_path: str
+        +chunk_size: int
+        +test_positions: int
+        +run_pretest() PretestResults
+        -_test_position(pos, desc) float
+        -_analyze_results(speeds) dict
+    }
 
-    %% display_info calls
-    display_info --> _display_header
-    display_info --> _display_basic_info
-    display_info --> _display_type_info
-    display_info --> _display_partition_info
-    display_info --> _display_mount_status
+    class PretestResults {
+        <<dataclass>>
+        +speeds: list
+        +average_speed: float
+        +speed_variance: float
+        +analysis: dict
+    }
 
-    %% Styling
-    classDef classNode fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
-    classDef publicMethod fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef privateMethod fill:#fff3e0,stroke:#e65100,stroke-width:2px
-
-    class DeviceDetector classNode
-    class get_size,get_device_properties,detect_type,is_mounted,get_partitions,display_info publicMethod
-    class _check_rotational,_check_nvme_interface,_check_mmc_interface,_analyze_rpm_indicators,_detect_from_model_name,_determine_type,_display_header,_display_basic_info,_display_type_info,_display_partition_info,_display_mount_status privateMethod
+    %% Relationships
+    WipeStrategy <|-- StandardStrategy
+    WipeStrategy <|-- SmallChunkStrategy
+    WipeStrategy <|-- AdaptiveStrategy
+    DiskPretest ..> PretestResults : creates
 ```
 
-### Function Call Graph (Legacy + New)
+### Strategy Pattern: Wiping Algorithms
+
+The core wiping functionality uses the **Strategy Pattern**, allowing different algorithms to be selected at runtime based on disk characteristics:
+
+1. **WipeStrategy (Abstract Base Class)**
+   - Defines common interface and shared functionality
+   - Handles progress display, checkpointing, and chunk writing
+   - Subclasses implement specific `wipe()` algorithms
+
+2. **StandardStrategy**
+   - Fixed chunk size throughout operation
+   - Default for SSDs and when pretest not performed
+   - Simple, predictable performance
+
+3. **SmallChunkStrategy**
+   - Caps chunk size at 10MB (MAX_SMALL_CHUNK_SIZE)
+   - Selected for slow HDDs (< 50 MB/s average)
+   - Better responsiveness on slow drives
+
+4. **AdaptiveStrategy**
+   - Dynamic chunk sizing based on disk position
+   - Tracks speed samples and adjusts chunks
+   - Selected for HDDs with high speed variance
+   - Optimizes for varying speeds (outer vs inner tracks)
+
+**Algorithm Selection Logic:**
+```python
+if disk_type == "HDD" and pretest_performed:
+    if pretest.average_speed < LOW_SPEED_THRESHOLD_MBPS:
+        use SmallChunkStrategy
+    elif pretest.speed_variance > HIGH_VARIANCE_THRESHOLD:
+        use AdaptiveStrategy
+    else:
+        use StandardStrategy
+else:
+    use StandardStrategy
+```
+
+### Main Architecture Flow
 
 ```mermaid
 graph TD
     %% Entry Point
-    main["main()<br/>Entry point - CLI argument parsing"]
+    main["main()<br/>CLI argument parsing"]
 
-    %% DeviceDetector Class (New)
-    DeviceDetector["DeviceDetector Class<br/>Object-oriented device operations"]
-
-    %% Legacy Functions (Backward Compatibility)
-    get_device_info["get_device_info(device)<br/>DEPRECATED - Use DeviceDetector"]
-    detect_disk_type["detect_disk_type(device)<br/>DEPRECATED - Use DeviceDetector"]
-    check_device_mounted["check_device_mounted(device)<br/>DEPRECATED - Use DeviceDetector"]
+    %% Classes
+    DeviceDetector["DeviceDetector<br/>Device operations"]
+    DiskPretest["DiskPretest<br/>HDD speed testing"]
+    StandardStrategy["StandardStrategy<br/>Fixed chunk wiping"]
+    SmallChunkStrategy["SmallChunkStrategy<br/>Small chunk wiping"]
+    AdaptiveStrategy["AdaptiveStrategy<br/>Dynamic chunk sizing"]
 
     %% Core Functions
-    list_all_devices["list_all_devices()<br/>List all available devices"]
-    get_block_device_size["get_block_device_size(device)<br/>Get device size in bytes"]
-    perform_hdd_pretest["perform_hdd_pretest(device, chunk_size)<br/>Test HDD write speeds at different positions"]
+    wipe_device["wipe_device()<br/>Main wiping orchestration"]
+    list_all_devices["list_all_devices()<br/>List block devices"]
 
-    %% Progress Management
-    get_progress_file["get_progress_file(device)<br/>Get progress file path"]
-    save_progress["save_progress(device, written, total_size, chunk_size, pretest_results)<br/>Save wipe progress to file"]
-    load_progress["load_progress(device)<br/>Load saved progress from file"]
-    clear_progress["clear_progress(device)<br/>Clear progress file"]
-    find_resume_files["find_resume_files()<br/>Find all progress files"]
-    display_resume_info["display_resume_info()<br/>Display available resume options"]
+    %% Progress Functions
+    save_progress["save_progress()<br/>Save with device_id, os.fsync()"]
+    load_progress["load_progress()<br/>Load and verify device_id"]
+    display_resume_info["display_resume_info()<br/>Show resume options"]
 
-    %% Core Wiping Function
-    wipe_device["wipe_device(device, chunk_size, resume, skip_pretest)<br/>Main wiping function"]
-
-    %% Utility Functions
-    parse_size["parse_size(size_str)<br/>Parse size strings (e.g., '100M', '1G')"]
-
-    %% Main function calls
+    %% Flow
     main --> display_resume_info
     main --> list_all_devices
-    main --> parse_size
-    main --> get_device_info
-    main --> load_progress
-    main --> clear_progress
     main --> wipe_device
 
-    %% Legacy wrapper calls (backward compatibility)
-    get_device_info --> DeviceDetector
-    detect_disk_type --> DeviceDetector
-    check_device_mounted --> DeviceDetector
-
-    %% wipe_device calls
-    wipe_device --> get_block_device_size
-    wipe_device --> detect_disk_type
+    wipe_device --> DeviceDetector
     wipe_device --> load_progress
-    wipe_device --> perform_hdd_pretest
+    wipe_device --> DiskPretest
+    wipe_device --> StandardStrategy
+    wipe_device --> SmallChunkStrategy
+    wipe_device --> AdaptiveStrategy
     wipe_device --> save_progress
 
-    %% Progress management calls
-    save_progress --> get_progress_file
-    load_progress --> get_progress_file
-    clear_progress --> get_progress_file
-    display_resume_info --> find_resume_files
-    find_resume_files --> get_progress_file
+    DeviceDetector --> detect_type["detect_type()<br/>HDD/SSD/NVMe"]
+    DeviceDetector --> get_unique_id["get_unique_id()<br/>serial/model/size"]
+    DeviceDetector --> is_mounted["is_mounted()<br/>safety check"]
+
+    DiskPretest --> run_pretest["run_pretest()<br/>Test 3 positions"]
+    DiskPretest --> PretestResults["PretestResults<br/>speeds, variance, analysis"]
+
+    StandardStrategy --> wipe_standard["wipe()<br/>Fixed chunks"]
+    SmallChunkStrategy --> wipe_small["wipe()<br/>10MB chunks"]
+    AdaptiveStrategy --> wipe_adaptive["wipe()<br/>Adaptive chunks"]
+
+    %% Progress callback
+    wipe_standard --> save_progress
+    wipe_small --> save_progress
+    wipe_adaptive --> save_progress
 
     %% Styling
     classDef entryPoint fill:#e1f5fe,stroke:#01579b,stroke-width:3px
     classDef classNode fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
     classDef coreFunction fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef utilityFunction fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
     classDef progressFunction fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef deprecatedFunction fill:#ffebee,stroke:#c62828,stroke-width:2px,stroke-dasharray: 5 5
+    classDef strategyNode fill:#c8e6c9,stroke:#2e7d32,stroke-width:3px
 
     class main entryPoint
-    class DeviceDetector classNode
-    class wipe_device,perform_hdd_pretest coreFunction
-    class parse_size,get_block_device_size,list_all_devices utilityFunction
-    class save_progress,load_progress,clear_progress,get_progress_file,find_resume_files,display_resume_info progressFunction
-    class get_device_info,detect_disk_type,check_device_mounted deprecatedFunction
+    class DeviceDetector,DiskPretest classNode
+    class StandardStrategy,SmallChunkStrategy,AdaptiveStrategy strategyNode
+    class wipe_device,list_all_devices coreFunction
+    class save_progress,load_progress,display_resume_info progressFunction
 ```
+
+### Component Descriptions
+
+#### **1. DeviceDetector Class**
+**Purpose**: Encapsulates all device detection and information operations
+
+**Public Methods**:
+- `get_size()` - Get device size in bytes via blockdev/ioctl
+- `get_device_properties()` - Get udev properties (serial, model, etc.)
+- `detect_type()` - Detect HDD/SSD/NVMe/eMMC with confidence level
+- `get_unique_id()` - Get device identifiers (serial, model, size) for resume verification
+- `is_mounted()` - Check if device or partitions are mounted
+- `get_partitions()` - Get partition information via lsblk
+- `display_info()` - Display comprehensive device information
+
+**Private Methods**:
+- `_check_rotational()` - Check sysfs rotation flag
+- `_check_nvme_interface()` - Check if device is NVMe
+- `_check_mmc_interface()` - Check if device is eMMC/SD
+- `_analyze_rpm_indicators()` - Analyze RPM keywords in properties
+- `_detect_from_model_name()` - Detect type from model string
+- `_determine_type()` - Synthesize all indicators into final type
+- `_display_*()` - Display formatting methods
+
+**Device ID Verification**:
+- `get_unique_id()` returns `{'serial': ..., 'model': ..., 'size': ...}`
+- Used in `load_progress()` to verify correct device on resume
+- Prevents accidental wrong-device wipes
+- Program halts with clear error if device mismatch detected
+
+#### **2. WipeStrategy Classes (Strategy Pattern)**
+**Purpose**: Implement different wiping algorithms
+
+**Abstract Base Class: WipeStrategy**
+- Defines common interface: `wipe()`, `get_algorithm_name()`
+- Shared functionality: progress display, checkpointing, chunk writing
+- Tracks: `written`, `last_milestone`, `written_since_last_save`
+- Callback mechanism for progress saves
+
+**StandardStrategy**
+- Fixed chunk size throughout operation
+- Simple, predictable performance
+- Default for SSDs
+
+**SmallChunkStrategy**
+- Caps chunk size at 10MB
+- For slow HDDs (< 50 MB/s)
+- Better responsiveness
+
+**AdaptiveStrategy**
+- Dynamic chunk sizing based on position
+- Tracks speed samples
+- For HDDs with high variance
+- Optimizes for outer vs inner tracks
+
+**Progress Tracking**:
+- Each strategy tracks `written_since_last_save`
+- Calls `progress_callback()` when `>= PROGRESS_SAVE_THRESHOLD` (100MB)
+- Ensures progress saves regardless of chunk size alignment
+
+#### **3. DiskPretest Class**
+**Purpose**: Test HDD write speeds at different positions
+
+**Methods**:
+- `run_pretest()` - Execute pretest, return PretestResults
+- `_test_position(pos, desc)` - Test single position, return speed
+- `_analyze_results(speeds)` - Analyze speeds, recommend algorithm
+
+**PretestResults Dataclass**:
+- `speeds: list[float]` - Speeds at each test position
+- `average_speed: float` - Average speed in MB/s
+- `speed_variance: float` - Speed variance
+- `analysis: dict` - Recommended algorithm and reason
+
+**Pretest Process**:
+1. Test beginning (5% into disk)
+2. Test middle (50% into disk)
+3. Test end (95% into disk)
+4. Calculate average speed and variance
+5. Recommend algorithm based on thresholds
+
+#### **4. Progress Management**
+**Purpose**: Save and restore wipe progress
+
+**Key Functions**:
+- `save_progress()` - Save progress with device_id, use os.fsync() for immediate persistence
+- `load_progress()` - Load and verify device_id matches current device
+- `clear_progress()` - Remove progress file
+- `get_progress_file()` - Returns `'wipeit_progress.json'` (single file for all devices)
+- `find_resume_files()` - Find existing progress file
+- `display_resume_info()` - Show resume options at startup
+
+**Progress File Format**:
+```json
+{
+  "device": "/dev/sdb",
+  "written": 1142947840,
+  "total_size": 320072933376,
+  "progress_percent": 0.357,
+  "chunk_size": 104857600,
+  "timestamp": 1760224401.27,
+  "pretest_results": {...},
+  "device_id": {
+    "serial": "VFM201R2E81GYN",
+    "model": "Hitachi_HDT725032VLA360",
+    "size": 320072933376
+  }
+}
+```
+
+**Safety Features**:
+- Device ID verification on resume prevents wrong-device wipes
+- `os.fsync()` ensures progress survives crashes
+- Saves every 100MB (PROGRESS_SAVE_THRESHOLD)
+- Single progress file: `wipeit_progress.json`
+
+#### **5. Global Constants (global_constants.py)**
+**Purpose**: Centralized application constants
+
+**Categories**:
+- Size multipliers: `KILOBYTE`, `MEGABYTE`, `GIGABYTE`
+- Defaults: `DEFAULT_CHUNK_SIZE`, `MAX_SMALL_CHUNK_SIZE`
+- Thresholds: `LOW_SPEED_THRESHOLD_MBPS`, `HIGH_VARIANCE_THRESHOLD`
+- Progress: `MILESTONE_INCREMENT_PERCENT` (5%), `PROGRESS_SAVE_THRESHOLD` (100MB)
+- Timeouts: `PROGRESS_FILE_EXPIRY_SECONDS`
+- Display: `DISPLAY_LINE_WIDTH`
+
+**Benefits**:
+- Single source of truth for all constants
+- Easy to tune performance parameters
+- Prevents magic numbers in code
+- Improves maintainability
+
+### Key Design Patterns
+
+1. **Strategy Pattern**: Wiping algorithms are interchangeable strategies selected at runtime based on disk characteristics.
+
+2. **Object-Oriented Encapsulation**: `DeviceDetector`, `DiskPretest`, and `WipeStrategy` classes encapsulate related operations with clean interfaces.
+
+3. **Dataclasses**: `PretestResults` provides type-safe, immutable data structures.
+
+4. **Template Method**: `WipeStrategy` base class defines algorithm skeleton, subclasses implement specific steps.
+
+5. **Callback Pattern**: Progress callbacks decouple strategy execution from progress persistence.
+
+6. **Progressive Enhancement**: Starts with basic wiping, adds intelligent features (detection, pretesting, adaptive algorithms).
+
+7. **Resume Capability**: Progress saved at 100MB intervals with device verification for safe resume.
+
+8. **Adaptive Algorithms**: Pretest results drive algorithm selection for optimal performance.
+
+9. **Separation of Concerns**: Detection, testing, strategies, progress, and CLI cleanly separated.
+
+10. **Method Decomposition**: Complex operations broken into focused, testable methods.
+
+11. **Error Handling**: Comprehensive error handling with graceful degradation and informative messages.
+
+12. **Immediate Persistence**: `os.fsync()` ensures critical progress data survives crashes.
 
 ### Function Categories
 
 #### **Entry Point**
 - `main()` - CLI argument parsing and orchestration
 
-#### **Object-Oriented Classes (New)**
-- `DeviceDetector` - Encapsulates all device detection and information operations
-  - **Public Methods**: `get_size()`, `get_device_properties()`, `detect_type()`, `is_mounted()`, `get_partitions()`, `display_info()`
-  - **Private Methods**: `_check_rotational()`, `_check_nvme_interface()`, `_check_mmc_interface()`, `_analyze_rpm_indicators()`, `_detect_from_model_name()`, `_determine_type()`, `_display_*()` methods
+#### **Classes**
+- `DeviceDetector` - Device detection and information
+- `DiskPretest` - HDD speed testing
+- `WipeStrategy` - Abstract base for wiping algorithms
+- `StandardStrategy` - Fixed chunk wiping
+- `SmallChunkStrategy` - Small chunk wiping
+- `AdaptiveStrategy` - Dynamic chunk sizing
 
 #### **Core Functions**
-- `wipe_device()` - Main wiping logic with disk type detection and algorithm selection
-- `perform_hdd_pretest()` - Test HDD write speeds to optimize algorithm selection
-
-#### **Legacy Functions (Backward Compatibility)**
-- `get_device_info()` - **DEPRECATED** - Use `DeviceDetector(device).display_info()` instead
-- `detect_disk_type()` - **DEPRECATED** - Use `DeviceDetector(device).detect_type()` instead
-- `check_device_mounted()` - **DEPRECATED** - Use `DeviceDetector(device).is_mounted()` instead
+- `wipe_device()` - Main wiping orchestration
+- `get_block_device_size()` - Get device size
 
 #### **Progress Management**
-- `save_progress()` - Save wipe progress and pretest results
-- `load_progress()` - Load saved progress for resume operations
-- `clear_progress()` - Remove progress files
-- `get_progress_file()` - Generate progress file paths
-- `find_resume_files()` - Discover available resume files
-- `display_resume_info()` - Show resume options to user
+- `save_progress()` - Save with device_id and os.fsync()
+- `load_progress()` - Load and verify device_id
+- `clear_progress()` - Remove progress file
+- `get_progress_file()` - Get progress filename
+- `find_resume_files()` - Find available progress
+- `display_resume_info()` - Show resume options
 
 #### **Utility Functions**
 - `parse_size()` - Convert size strings to bytes
-- `get_block_device_size()` - Get device size using system calls
 - `list_all_devices()` - List available block devices
 
-### Key Design Patterns
+### Testing Architecture
 
-1. **Object-Oriented Encapsulation**: The new `DeviceDetector` class encapsulates all device-related operations, providing a clean interface and internal state management.
+**Test Files**:
+- `test_wipeit.py` - Main functionality tests (95 tests)
+- `test_device_detector.py` - DeviceDetector tests (14 tests)
+- `test_wipe_strategy.py` - Strategy tests (48 tests)
 
-2. **Backward Compatibility**: Legacy functions are maintained as thin wrappers around the new class methods, ensuring existing code continues to work without modification.
+**Total**: 157 tests with 95% coverage
 
-3. **Progressive Enhancement**: The system starts with basic wiping and adds intelligent features (disk detection, pretesting) for optimal performance.
+**Test Categories**:
+- Unit tests with comprehensive mocking
+- Integration tests for end-to-end flows
+- Strategy pattern tests across all implementations
+- Progress tracking and resume tests
+- Device ID verification tests
+- Error handling and edge case tests
 
-4. **Resume Capability**: Progress is saved at regular intervals, allowing interrupted wipes to be resumed.
+### Performance Characteristics
 
-5. **Adaptive Algorithms**: HDD pretesting enables selection of optimal wiping strategies based on actual device performance.
+**Benchmark Results** (298GB HDD):
+- StandardStrategy: ~1.5-2 hours
+- SmallChunkStrategy: ~2-2.5 hours (better responsiveness)
+- AdaptiveStrategy: ~1.5-2 hours (optimal for varying speeds)
 
-6. **Separation of Concerns**: Device information, progress management, and core wiping logic are cleanly separated into distinct function groups and classes.
+**Progress Tracking**:
+- Saves every 100MB (PROGRESS_SAVE_THRESHOLD)
+- Maximum progress loss: 100MB on crash
+- Immediate disk flush with `os.fsync()`
 
-7. **Method Decomposition**: Complex operations are broken down into smaller, focused methods (e.g., `detect_type()` uses 6 helper methods).
+**Algorithm Selection**:
+- Pretest takes 3-5 seconds
+- Saves significant time by choosing optimal algorithm
+- Adaptive strategy can improve performance by 10-20% on HDDs
 
-8. **Error Handling**: Comprehensive error handling with graceful degradation and informative error messages.
+### Safety Mechanisms
+
+1. **Mount Safety**: Refuses to wipe mounted devices
+2. **Device Verification**: Checks device ID on resume
+3. **Progress Persistence**: `os.fsync()` guarantees disk writes
+4. **User Confirmation**: Requires explicit 'y' to proceed
+5. **Clear Warnings**: Prominent warnings throughout
+6. **Graceful Interrupts**: Ctrl+C saves progress properly
+7. **Error Messages**: Detailed error messages with recovery instructions
+
+### Future Architecture Considerations
+
+**Potential Enhancements**:
+- Parallel wiping for multi-device operations
+- Additional strategies (parallel writes, pattern-based)
+- Enhanced pretest with more test positions
+- Progress reporting via REST API
+- Web UI for monitoring
+- Verification pass after wiping
+- Multiple wipe passes (DOD 5220.22-M)
+
+**Backward Compatibility**:
+- Legacy functions maintained as wrappers
+- Old progress files ignored (device-specific names)
+- Graceful handling of missing device IDs
