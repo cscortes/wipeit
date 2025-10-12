@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, mock_open, patch
 
 # Import modules from the same directory
 import wipeit
+from disk_pretest import DiskPretest
 from global_constants import (
     GIGABYTE,
     MEGABYTE,
@@ -965,8 +966,9 @@ class TestHDDPretest(unittest.TestCase):
 
         with patch('os.fsync'):
             with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-                result = wipeit.perform_hdd_pretest('/dev/sdb',
-                                                    TEST_CHUNK_SIZE_100MB)
+                pretest = DiskPretest('/dev/sdb', TEST_CHUNK_SIZE_100MB)
+                results = pretest.run_pretest()
+                result = results.to_dict() if results else None
 
         # Verify pretest was performed
         self.assertIsNotNone(result)
@@ -1004,8 +1006,9 @@ class TestHDDPretest(unittest.TestCase):
         mock_file.return_value.__enter__.return_value.fileno.return_value = 1
 
         with patch('os.fsync'):
-            result = wipeit.perform_hdd_pretest('/dev/sdb',
-                                                TEST_CHUNK_SIZE_100MB)
+            pretest = DiskPretest('/dev/sdb', TEST_CHUNK_SIZE_100MB)
+            results = pretest.run_pretest()
+            result = results.to_dict() if results else None
 
         # Verify adaptive algorithm is recommended
         self.assertEqual(result['analysis']['recommended_algorithm'],
@@ -1036,8 +1039,9 @@ class TestHDDPretest(unittest.TestCase):
         mock_file.return_value.__enter__.return_value.fileno.return_value = 1
 
         with patch('os.fsync'):
-            result = wipeit.perform_hdd_pretest('/dev/sdb',
-                                                TEST_CHUNK_SIZE_100MB)
+            pretest = DiskPretest('/dev/sdb', TEST_CHUNK_SIZE_100MB)
+            results = pretest.run_pretest()
+            result = results.to_dict() if results else None
 
         # Verify small chunk algorithm is recommended
         self.assertEqual(result['analysis']['recommended_algorithm'],
@@ -1082,8 +1086,11 @@ class TestWipeDeviceIntegration(unittest.TestCase):
         }
 
         with patch('os.fsync'):
-            with patch('wipeit.perform_hdd_pretest',
-                       return_value=mock_pretest_results):
+            mock_results = MagicMock()
+            mock_results.to_dict.return_value = mock_pretest_results
+            with patch('wipeit.DiskPretest') as mock_pretest_class:
+                mock_pretest_class.return_value.run_pretest.return_value = \
+                    mock_results
                 with patch('wipeit.DeviceDetector.detect_type',
                            return_value=('HDD', 'HIGH', ['rotational=1'])):
                     with patch('sys.stdout', new_callable=StringIO):
@@ -1132,8 +1139,11 @@ class TestWipeDeviceIntegration(unittest.TestCase):
         }
 
         with patch('os.fsync'):
-            with patch('wipeit.perform_hdd_pretest',
-                       return_value=mock_pretest_results):
+            mock_results = MagicMock()
+            mock_results.to_dict.return_value = mock_pretest_results
+            with patch('wipeit.DiskPretest') as mock_pretest_class:
+                mock_pretest_class.return_value.run_pretest.return_value = \
+                    mock_results
                 with patch('wipeit.DeviceDetector.detect_type',
                            return_value=('HDD', 'HIGH', ['rotational=1'])):
                     with patch('sys.stdout', new_callable=StringIO):

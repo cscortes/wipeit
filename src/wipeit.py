@@ -84,29 +84,6 @@ def get_block_device_size(device):
         return struct.unpack('Q', buf)[0]
 
 
-def perform_hdd_pretest(device, chunk_size=DEFAULT_CHUNK_SIZE):
-    """
-    Perform HDD pretest (WRAPPER for backward compatibility).
-
-    This function maintained for backward compatibility.
-    New code should use DiskPretest class directly.
-
-    Args:
-        device: Path to block device
-        chunk_size: Size of test chunks in bytes
-
-    Returns:
-        dict: Pretest results with speed measurements and recommendations
-    """
-    pretest = DiskPretest(device, chunk_size)
-    results = pretest.run_pretest()
-
-    if results is None:
-        return None
-
-    return results.to_dict()
-
-
 def get_progress_file(device):
     """Get the path to the progress file.
 
@@ -387,8 +364,10 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             else:
                 print("HDD detected - performing pretest to optimize "
                       "wiping algorithm...")
-                pretest_results = perform_hdd_pretest(device, chunk_size)
-                if pretest_results:
+                pretest = DiskPretest(device, chunk_size)
+                results = pretest.run_pretest()
+                if results:
+                    pretest_results = results.to_dict()
                     save_progress(device, written, size, chunk_size,
                                   pretest_results, device_id)
                 else:
