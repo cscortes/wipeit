@@ -330,5 +330,4 @@ build:
 	@echo "To install locally:"
 	@echo "  pip install dist/wipeit-$$(grep '^version' pyproject.toml | cut -d'"' -f2)-py3-none-any.whl"
 	@echo ""
-	@echo "To upload to PyPI (requires credentials):"
-	@echo "  python3 -m twine upload dist/*"
+	@echo "Note: Distribution packages are for local use only"

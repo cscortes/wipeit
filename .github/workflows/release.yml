@@ -57,7 +57,9 @@ jobs:
           ## Installation
 
           ```bash
-          pip install wipeit
+          git clone https://github.com/cscortes/wipeit.git
+          cd wipeit
+          uv sync
           ```
 
           ## Usage

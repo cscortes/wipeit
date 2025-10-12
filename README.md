@@ -86,28 +86,18 @@ A secure device wiping utility that overwrites block devices with random data.
 
 **⚠️ WARNING: Before installing, understand that this tool will PERMANENTLY DESTROY data! ⚠️**
 
-### Using uv (recommended)
+### Install from Source
 
 ```bash
-# Install from PyPI (when published)
-uv pip install wipeit
-
-# Or install from source (new src/ structure)
-git clone <repository-url>
+git clone https://github.com/cscortes/wipeit.git
 cd wipeit
 uv sync
-```
-
-### Using pip
-
-```bash
-pip install wipeit
 ```
 
 ### Development Installation
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/cscortes/wipeit.git
 cd wipeit
 uv sync
 source .venv/bin/activate

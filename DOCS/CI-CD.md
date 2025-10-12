@@ -54,7 +54,7 @@ The wipeit project uses GitHub Actions for:
 **Features**:
 - Pre-release testing with `make tests`
 - Package building with `make build`
-- PyPI publishing
+- Package validation with `twine check`
 - GitHub release creation
 - Changelog integration
 
