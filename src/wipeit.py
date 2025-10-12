@@ -308,6 +308,38 @@ def display_resume_info():
     return True
 
 
+def handle_resume(device):
+    """
+    Handle resume logic: load progress and display resume information.
+
+    Args:
+        device (str): Device path
+
+    Returns:
+        tuple: (written, existing_pretest_results) where:
+            - written: bytes written so far (0 if no progress)
+            - existing_pretest_results: dict of pretest results or None
+    """
+    progress_data = load_progress(device)
+
+    if not progress_data:
+        print("No previous progress found, starting from beginning")
+        return 0, None
+
+    written = progress_data['written']
+    print(f"Resuming wipe from {written / GIGABYTE:.2f} GB "
+          f"({progress_data['progress_percent']:.2f}% complete)")
+    print(f"Previous session: {time.ctime(progress_data['timestamp'])}")
+
+    existing_pretest_results = None
+    if 'pretest_results' in progress_data:
+        existing_pretest_results = progress_data['pretest_results']
+        print(f"   Found previous pretest results from "
+              f"{time.ctime(progress_data['timestamp'])}")
+
+    return written, existing_pretest_results
+
+
 def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
                 skip_pretest=False):
     """
@@ -344,23 +376,11 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         if details:
             print(f"   Detection details: {', '.join(details)}")
 
-        progress_data = None
-        existing_pretest_results = None
         if resume:
-            progress_data = load_progress(device)
-            if progress_data:
-                written = progress_data['written']
-                print(f"Resuming wipe from {written / GIGABYTE:.2f} GB "
-                      f"({progress_data['progress_percent']:.2f}% complete)")
-                print(f"Previous session:"
-                      f" {time.ctime(progress_data['timestamp'])}")
-
-                if 'pretest_results' in progress_data:
-                    existing_pretest_results = progress_data['pretest_results']
-                    print(f"   Found previous pretest results from "
-                          f"{time.ctime(progress_data['timestamp'])}")
-            else:
-                print("No previous progress found, starting from beginning")
+            written, existing_pretest_results = handle_resume(device)
+        else:
+            written = 0
+            existing_pretest_results = None
 
         if disk_type == "HDD" and not skip_pretest:
             if existing_pretest_results:
