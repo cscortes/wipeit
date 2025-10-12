@@ -49,7 +49,7 @@ def list_all_devices():
         print(f"Error listing devices: {e}")
 
 
-def parse_size(size_str):
+def parse_size(size_str) -> int:
     """Parse size string with M, G, T suffix (e.g., '100M', '1G', '500M')."""
     size_str = size_str.upper().strip()
 

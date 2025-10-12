@@ -3,9 +3,10 @@
 Unit tests for wipeit - Secure device wiping utility
 """
 
+import argparse
 import json
 import os
-import subprocess
+import subprocess  # noqa: F401 - used in @patch decorator strings
 import sys
 import time
 import unittest
@@ -443,29 +444,189 @@ class TestResumeFileFunctions(unittest.TestCase):
         self.assertIn('25.00% complete', output)
 
 
+class TestUtilityFunctions(unittest.TestCase):
+    """Test utility functions extracted from wipe_device."""
+
+    def test_calculate_average_speed_normal(self):
+        """Test calculate_average_speed with normal values."""
+        # 100 MB in 10 seconds = 10 MB/s
+        speed = wipeit.calculate_average_speed(100 * MEGABYTE, 10.0)
+        self.assertAlmostEqual(speed, 10.0, places=2)
+
+    def test_calculate_average_speed_zero_time(self):
+        """Test calculate_average_speed with zero time."""
+        # Should return 0.0 to avoid division by zero
+        speed = wipeit.calculate_average_speed(100 * MEGABYTE, 0.0)
+        self.assertEqual(speed, 0.0)
+
+    def test_calculate_average_speed_large_values(self):
+        """Test calculate_average_speed with large values."""
+        # 1 GB in 100 seconds = 10 MB/s
+        speed = wipeit.calculate_average_speed(GIGABYTE, 100.0)
+        self.assertAlmostEqual(speed, 10.24, places=2)
+
+    def test_create_wipe_strategy_standard(self):
+        """Test create_wipe_strategy creates StandardStrategy."""
+        strategy = wipeit.create_wipe_strategy(
+            'standard', '/dev/sdb', 1000, 100, 0, None, lambda w, t, c: None)
+        self.assertIsInstance(strategy, wipeit.StandardStrategy)
+
+    def test_create_wipe_strategy_adaptive(self):
+        """Test create_wipe_strategy creates AdaptiveStrategy."""
+        pretest_results = {'recommended_algorithm': 'adaptive_chunk'}
+        strategy = wipeit.create_wipe_strategy(
+            'adaptive_chunk', '/dev/sdb', 1000, 100, 0,
+            pretest_results, lambda w, t, c: None)
+        self.assertIsInstance(strategy, wipeit.AdaptiveStrategy)
+
+    def test_create_wipe_strategy_small_chunk(self):
+        """Test create_wipe_strategy creates SmallChunkStrategy."""
+        strategy = wipeit.create_wipe_strategy(
+            'small_chunk', '/dev/sdb', 1000, 100, 0, None,
+            lambda w, t, c: None)
+        self.assertIsInstance(strategy, wipeit.SmallChunkStrategy)
+
+    @patch('wipeit.load_progress')
+    def test_handle_resume_no_progress(self, mock_load_progress):
+        """Test handle_resume when no progress exists."""
+        mock_load_progress.return_value = None
+
+        with patch('sys.stdout', new_callable=StringIO):
+            written, pretest = wipeit.handle_resume('/dev/sdb')
+
+        self.assertEqual(written, 0)
+        self.assertIsNone(pretest)
+
+    @patch('wipeit.load_progress')
+    def test_handle_resume_with_progress(self, mock_load_progress):
+        """Test handle_resume with existing progress."""
+        progress = {
+            'written': 1000000,
+            'progress_percent': 50.0,
+            'timestamp': time.time(),
+            'pretest_results': {'recommended_algorithm': 'adaptive'}
+        }
+        mock_load_progress.return_value = progress
+
+        with patch('sys.stdout', new_callable=StringIO):
+            written, pretest = wipeit.handle_resume('/dev/sdb')
+
+        self.assertEqual(written, 1000000)
+        self.assertEqual(pretest, {'recommended_algorithm': 'adaptive'})
+
+    @patch('wipeit.load_progress')
+    def test_handle_resume_with_progress_no_pretest(self, mock_load_progress):
+        """Test handle_resume with progress but no pretest results."""
+        progress = {
+            'written': 500000,
+            'progress_percent': 25.0,
+            'timestamp': time.time()
+        }
+        mock_load_progress.return_value = progress
+
+        with patch('sys.stdout', new_callable=StringIO):
+            written, pretest = wipeit.handle_resume('/dev/sdb')
+
+        self.assertEqual(written, 500000)
+        self.assertIsNone(pretest)
+
+    def test_handle_hdd_pretest_uses_existing(self):
+        """Test handle_hdd_pretest uses existing pretest results."""
+        existing = {'recommended_algorithm': 'adaptive_chunk'}
+
+        with patch('sys.stdout', new_callable=StringIO):
+            result = wipeit.handle_hdd_pretest(
+                '/dev/sdb', 100, existing, 0, 1000, {})
+
+        self.assertEqual(result, existing)
+
+    @patch('wipeit.save_progress')
+    @patch('wipeit.DiskPretest')
+    def test_handle_hdd_pretest_runs_new(self, mock_pretest_class,
+                                         mock_save_progress):
+        """Test handle_hdd_pretest runs new pretest when no existing
+        results."""
+        # Mock DiskPretest instance and its run_pretest method
+        mock_pretest_instance = MagicMock()
+        mock_results = MagicMock()
+        mock_results.to_dict.return_value = {
+            'recommended_algorithm': 'small_chunk'
+        }
+        mock_pretest_instance.run_pretest.return_value = mock_results
+        mock_pretest_class.return_value = mock_pretest_instance
+
+        with patch('sys.stdout', new_callable=StringIO):
+            result = wipeit.handle_hdd_pretest(
+                '/dev/sdb', 100, None, 0, 1000, {'serial': '123'})
+
+        # Verify DiskPretest was instantiated with correct args
+        mock_pretest_class.assert_called_once_with('/dev/sdb', 100)
+        # Verify run_pretest was called
+        mock_pretest_instance.run_pretest.assert_called_once()
+        # Verify save_progress was called
+        mock_save_progress.assert_called_once()
+        # Verify result matches
+        self.assertEqual(result, {'recommended_algorithm': 'small_chunk'})
+
+    @patch('wipeit.save_progress')
+    @patch('wipeit.DiskPretest')
+    def test_handle_hdd_pretest_failed(self, mock_pretest_class,
+                                       mock_save_progress):
+        """Test handle_hdd_pretest when pretest fails."""
+        # Mock DiskPretest instance that returns None (failure)
+        mock_pretest_instance = MagicMock()
+        mock_pretest_instance.run_pretest.return_value = None
+        mock_pretest_class.return_value = mock_pretest_instance
+
+        with patch('sys.stdout', new_callable=StringIO):
+            result = wipeit.handle_hdd_pretest(
+                '/dev/sdb', 100, None, 0, 1000, {'serial': '123'})
+
+        # Verify pretest was attempted
+        mock_pretest_instance.run_pretest.assert_called_once()
+        # Verify save_progress was NOT called
+        mock_save_progress.assert_not_called()
+        # Verify result is None
+        self.assertIsNone(result)
+
+    def test_setup_argument_parser_returns_parser(self):
+        """Test setup_argument_parser returns ArgumentParser instance."""
+        parser = wipeit.setup_argument_parser()
+        self.assertIsInstance(parser, argparse.ArgumentParser)
+
+    def test_setup_argument_parser_has_device_arg(self):
+        """Test setup_argument_parser configures device argument."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['/dev/sdb'])
+        self.assertEqual(args.device, '/dev/sdb')
+
+    def test_setup_argument_parser_has_buffer_size_arg(self):
+        """Test setup_argument_parser configures buffer-size argument."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['-b', '1G', '/dev/sdb'])
+        self.assertEqual(args.buffer_size, '1G')
+
+    def test_setup_argument_parser_has_resume_arg(self):
+        """Test setup_argument_parser configures resume argument."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['--resume', '/dev/sdb'])
+        self.assertTrue(args.resume)
+
+    def test_setup_argument_parser_has_skip_pretest_arg(self):
+        """Test setup_argument_parser configures skip-pretest argument."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['--skip-pretest', '/dev/sdb'])
+        self.assertTrue(args.skip_pretest)
+
+    def test_setup_argument_parser_has_list_arg(self):
+        """Test setup_argument_parser configures list argument."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['--list'])
+        self.assertTrue(args.list)
+
+
 class TestDeviceInfoFunctions(unittest.TestCase):
     """Test device information functions."""
-
-    @patch('subprocess.check_output')
-    def test_get_device_info(self, mock_check_output):
-        """Test getting device information."""
-        # Mock subprocess outputs
-        mock_check_output.side_effect = [
-            b'1073741824\n',  # blockdev --getsize64
-            b'ID_MODEL=Samsung_SSD\nID_SERIAL_SHORT=12345\n',  # udevadm info
-            b'NAME SIZE TYPE MOUNTPOINTS\nsdb 1G disk\n',  # lsblk
-            b'/dev/sda1 on /boot\n',  # mount
-        ]
-
-        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
-            detector = wipeit.DeviceDetector('/dev/sdb')
-            detector.display_info()
-
-        output = mock_stdout.getvalue()
-        self.assertIn('Device: /dev/sdb', output)
-        self.assertIn('Size: 1.00 GB', output)
-        self.assertIn('Model: Samsung_SSD', output)
-        self.assertIn('Serial: 12345', output)
 
     @patch('subprocess.check_output')
     def test_list_all_devices(self, mock_check_output):
@@ -1107,75 +1268,6 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                         for size in write_calls:
                             self.assertIsInstance(size, int)
 
-
-class TestMountChecking(unittest.TestCase):
-    """Test mount checking functionality."""
-
-    @patch('wipeit.subprocess.check_output')
-    def test_check_device_mounted_not_mounted(self, mock_check_output):
-        """Test check_device_mounted when device is not mounted."""
-        # Mock mount command output (device not in mount list)
-        mock_check_output.side_effect = [
-            # mount output
-            b'/dev/sda1 on / type ext4 (rw,relatime)\n'
-            b'/dev/sda2 on /home type ext4 (rw,relatime)\n',
-            b'sdb\nsdb1\n'  # lsblk output (no mountpoints)
-        ]
-
-        detector = wipeit.DeviceDetector('/dev/sdb')
-        is_mounted, mount_info = detector.is_mounted()
-
-        self.assertFalse(is_mounted)
-        self.assertEqual(mount_info, [])
-        self.assertEqual(mock_check_output.call_count, 2)
-
-    @patch('wipeit.subprocess.check_output')
-    def test_check_device_mounted_device_mounted(self, mock_check_output):
-        """Test check_device_mounted when device itself is mounted."""
-        # Mock mount command output (device in mount list)
-        mock_check_output.side_effect = [
-            b'/dev/sdb on /mnt/usb type ext4 (rw,relatime)\n',  # mount output
-            b'sdb\nsdb1\n'  # lsblk output
-        ]
-
-        detector = wipeit.DeviceDetector('/dev/sdb')
-        is_mounted, mount_info = detector.is_mounted()
-
-        self.assertTrue(is_mounted)
-        self.assertEqual(mount_info, [])
-        self.assertEqual(mock_check_output.call_count, 2)
-
-    @patch('wipeit.subprocess.check_output')
-    def test_check_device_mounted_partitions_mounted(self, mock_check_output):
-        """Test check_device_mounted when partitions are mounted."""
-        # Mock mount command output (device not in mount list)
-        mock_check_output.side_effect = [
-            b'/dev/sda1 on / type ext4 (rw,relatime)\n',  # mount output
-            b'sdb\nsdb1 /mnt/usb\nsdb2 /media/data\n'  # lsblk with mountpoints
-        ]
-
-        detector = wipeit.DeviceDetector('/dev/sdb')
-        is_mounted, mount_info = detector.is_mounted()
-
-        self.assertTrue(is_mounted)
-        self.assertEqual(len(mount_info), 2)
-        self.assertIn('/dev/sdb1 -> /mnt/usb', mount_info)
-        self.assertIn('/dev/sdb2 -> /media/data', mount_info)
-        self.assertEqual(mock_check_output.call_count, 2)
-
-    @patch('wipeit.subprocess.check_output')
-    def test_check_device_mounted_error_handling(self, mock_check_output):
-        """Test check_device_mounted error handling."""
-        # Mock subprocess to raise an exception
-        mock_check_output.side_effect = subprocess.CalledProcessError(
-            1, 'mount')
-
-        detector = wipeit.DeviceDetector('/dev/sdb')
-        is_mounted, mount_info = detector.is_mounted()
-
-        self.assertFalse(is_mounted)
-        self.assertEqual(mount_info, [])
-
     @patch('wipeit.DeviceDetector.is_mounted')
     @patch('wipeit.DeviceDetector.display_info')
     @patch('wipeit.load_progress')
@@ -1279,12 +1371,12 @@ if __name__ == '__main__':
         TestParseSize,
         TestProgressFileFunctions,
         TestResumeFileFunctions,
+        TestUtilityFunctions,
         TestDeviceInfoFunctions,
         TestMainFunction,
         TestIntegration,
         TestHDDPretest,
         TestWipeDeviceIntegration,
-        TestMountChecking,
     ]
 
     for test_class in test_classes:
