@@ -79,7 +79,25 @@ def parse_size(size_str):
 
 
 def get_block_device_size(device):
-    """Get the size of a block device in bytes using BLKGETSIZE64 ioctl."""
+    """
+    Get the size of a block device in bytes using the BLKGETSIZE64 ioctl.
+
+    This function directly queries the Linux kernel for the device size using
+    the BLKGETSIZE64 ioctl command, which returns the device size as a 64-bit
+    unsigned integer. This is more reliable than parsing /proc or /sys files.
+
+    Args:
+        device (str): Path to the block device
+                      (e.g., '/dev/sda', '/dev/nvme0n1')
+
+    Returns:
+        int: Size of the device in bytes
+
+    Raises:
+        FileNotFoundError: If the device path does not exist
+        PermissionError: If insufficient permissions to access the device
+        OSError: If the ioctl call fails (e.g., not a block device)
+    """
     with open(device, 'rb') as fd:
         buf = bytearray(8)
         fcntl.ioctl(fd.fileno(), BLKGETSIZE64, buf)
