@@ -172,13 +172,13 @@ class TestProgressFileFunctions(unittest.TestCase):
         self.assertTrue(os.path.exists(self.test_progress_file))
 
         # Clear it
-        wipeit.clear_progress(self.test_device)
+        wipeit.clear_progress()
         self.assertFalse(os.path.exists(self.test_progress_file))
 
     def test_clear_progress_nonexistent(self):
         """Test clearing nonexistent progress file."""
         # Should not raise an exception
-        wipeit.clear_progress('/dev/nonexistent')
+        wipeit.clear_progress()
 
     def test_progress_percent_calculation(self):
         """Test that progress_percent is correctly calculated when saving."""
@@ -812,7 +812,7 @@ class TestIntegration(unittest.TestCase):
         self.assertEqual(progress['written'], written)
 
         # Clear progress
-        wipeit.clear_progress(device)
+        wipeit.clear_progress()
 
         # Verify cleared
         progress = wipeit.load_progress(device)

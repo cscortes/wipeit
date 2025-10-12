@@ -78,7 +78,7 @@ def parse_size(size_str):
     return size_bytes
 
 
-def get_block_device_size(device):
+def get_block_device_size(device: str) -> int:
     """
     Get the size of a block device in bytes using the BLKGETSIZE64 ioctl.
 
@@ -133,8 +133,8 @@ def save_progress(device, written, total_size,
     try:
         with open(progress_file, 'w') as f:
             json.dump(progress_data, f, indent=2)
-            f.flush()  # Flush Python buffer
-            os.fsync(f.fileno())  # Flush OS buffer to disk immediately
+            f.flush()
+            os.fsync(f.fileno())
     except Exception as e:
         print(f"Warning: Could not save progress: {e}")
 
@@ -238,7 +238,7 @@ def load_progress(device):
         return None
 
 
-def clear_progress(device):
+def clear_progress():
     """Clear progress file."""
     progress_file = PROGRESS_FILE_NAME
     try:
@@ -405,7 +405,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         strategy.wipe()
         written = strategy.written
 
-        clear_progress(device)
+        clear_progress()
 
         total_time = time.time() - start_time
         if total_time > 0:
@@ -582,7 +582,7 @@ Examples:
             print(f"Resuming wipe from {percent:.2f}% complete")
     else:
         # Clear any existing progress
-        clear_progress(args.device)
+        clear_progress()
 
     # Final confirmation
     print("\n" + "=" * 70)
