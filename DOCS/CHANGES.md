@@ -11,6 +11,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] - 2025-10-11
+
+### Fixed
+- **Critical: Progress callbacks never called**: Fixed modulo alignment bug that prevented progress saves
+  - Problem: `written % PROGRESS_SAVE_THRESHOLD == 0` fails when chunk sizes don't align (e.g., 1GB chunks vs 100MB threshold: `1073741824 % 104857600 = 62914560 ≠ 0`)
+  - Solution: Added `written_since_last_save` tracking variable
+  - Changed condition to `written_since_last_save >= PROGRESS_SAVE_THRESHOLD`
+  - Ensures progress saves every 100MB regardless of chunk size
+  - Affects StandardStrategy and AdaptiveStrategy
+- **UnboundLocalError crash**: Fixed variable scope issue in exception handlers
+  - Initialize `device_id = None` at start of `wipe_device()` function
+  - Prevents crashes when exceptions occur before device_id is assigned
+- **Test infrastructure improvements**: Fixed 4 test mocking issues
+  - Added missing `DeviceDetector` mocks in integration tests
+  - Fixed `test_keyboard_interrupt_saves_actual_progress` device attribute
+  - Added `input()` mock to prevent test hanging
+  - All 157 tests now pass reliably
+
+### Changed
+- Test reliability: All tests properly mocked and isolated
+- Code quality: Fixed whitespace and line length linter errors
+
 ## [1.4.0] - 2025-10-11
 
 ### Fixed

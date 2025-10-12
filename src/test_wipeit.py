@@ -248,8 +248,8 @@ class TestProgressFileFunctions(unittest.TestCase):
                 self.assertAlmostEqual(
                     data['progress_percent'], expected_percent, places=2,
                     msg=f"Progress percent mismatch for {description}: "
-                        f"expected {expected_percent}%, "
-                        f"got {data['progress_percent']}%")
+                    f"expected {expected_percent}%, "
+                    f"got {data['progress_percent']}%")
 
                 # Also verify written and total_size are saved correctly
                 self.assertEqual(
@@ -589,7 +589,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.4.0', output)
+        self.assertIn('wipeit 1.4.1', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
