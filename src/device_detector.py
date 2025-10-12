@@ -9,6 +9,8 @@ detection and information gathering functionality.
 import os
 import subprocess
 
+from global_constants import GIGABYTE
+
 
 class DeviceDetector:
     """
@@ -241,7 +243,7 @@ class DeviceDetector:
     def _display_basic_info(self, size, properties):
         """Display basic device information."""
         print(f"• Device: {self.device_path}")
-        print(f"• Size: {size / (1024**3):.2f} GB")
+        print(f"• Size: {size / GIGABYTE:.2f} GB")
         if 'ID_MODEL' in properties:
             print(f"• Model: {properties['ID_MODEL']}")
         if 'ID_SERIAL_SHORT' in properties:

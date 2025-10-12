@@ -11,6 +11,7 @@ import time
 
 from global_constants import (
     DEFAULT_CHUNK_SIZE,
+    GIGABYTE,
     HIGH_VARIANCE_THRESHOLD_MBPS,
     LOW_SPEED_THRESHOLD_MBPS,
     MEGABYTE,
@@ -266,8 +267,8 @@ class DiskPretest:
         print("• Performing HDD pretest to optimize wiping algorithm...")
         print("  This will test write speeds at different disk positions.")
         print("  WARNING: This will write test data to the disk!")
-        print(f"• Disk size: {size / (1024**3):.2f} GB")
-        print(f"• Test chunk size: {self.chunk_size / (1024**2):.0f} MB")
+        print(f"• Disk size: {size / GIGABYTE:.2f} GB")
+        print(f"• Test chunk size: {self.chunk_size / MEGABYTE:.0f} MB")
 
     def _display_results(self, results):
         """

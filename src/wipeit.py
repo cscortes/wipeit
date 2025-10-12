@@ -209,9 +209,9 @@ def load_progress(device):
                     print("Cannot resume: Device size does not match!")
                     print()
                     print(f"Expected size: "
-                          f"{saved_id['size'] / (1024**3):.2f} GB")
+                          f"{saved_id['size'] / GIGABYTE:.2f} GB")
                     print(f"Current size:  "
-                          f"{current_id['size'] / (1024**3):.2f} GB")
+                          f"{current_id['size'] / GIGABYTE:.2f} GB")
                     print()
                     print("⚠️  This is a DIFFERENT drive or the drive has "
                           "been repartitioned!")
@@ -294,8 +294,8 @@ def display_resume_info():
 
         print(f"• Device: {device}")
         print(f"  Progress: {progress_percent:.2f}% complete")
-        written_gb = written / (1024**3)
-        total_gb = total_size / (1024**3)
+        written_gb = written / GIGABYTE
+        total_gb = total_size / GIGABYTE
         print(f"  Written: {written_gb:.2f} GB / {total_gb:.2f} GB")
         print(f"  Started: {time.ctime(timestamp)}")
         print()
@@ -350,7 +350,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             progress_data = load_progress(device)
             if progress_data:
                 written = progress_data['written']
-                print(f"Resuming wipe from {written / (1024**3):.2f} GB "
+                print(f"Resuming wipe from {written / GIGABYTE:.2f} GB "
                       f"({progress_data['progress_percent']:.2f}% complete)")
                 print(f"Previous session:"
                       f" {time.ctime(progress_data['timestamp'])}")
@@ -425,7 +425,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         print("WIPE COMPLETED")
         print("=" * 50)
         print(f"• Device: {device}")
-        print(f"• Size: {size / (1024**3):.2f} GB")
+        print(f"• Size: {size / GIGABYTE:.2f} GB")
         print(f"• Time: {total_time:.2f} seconds")
         print(f"• Average speed: {avg_speed:.2f} MB/s")
         print("• Status: Successfully wiped")
@@ -435,7 +435,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         if 'strategy' in locals():
             written = strategy.written
         print("\n\n⚠️  Wipe interrupted by user")
-        print(f"• Progress saved: {written / (1024**3):.2f} GB written")
+        print(f"• Progress saved: {written / GIGABYTE:.2f} GB written")
         print("• To resume: run wipeit with --resume flag")
         save_progress(device, written, size, chunk_size, pretest_results,
                       device_id)
@@ -531,8 +531,8 @@ Examples:
     print("=" * DISPLAY_LINE_WIDTH)
     print("CONFIGURATION")
     print("=" * DISPLAY_LINE_WIDTH)
-    print(f"• Using buffer size: {buffer_size / (1024**2):.0f} MB "
-          f"({buffer_size / (1024**3):.2f} GB)")
+    print(f"• Using buffer size: {buffer_size / MEGABYTE:.0f} MB "
+          f"({buffer_size / GIGABYTE:.2f} GB)")
 
     # Get device information
     detector = DeviceDetector(args.device)
@@ -582,8 +582,8 @@ Examples:
             print("Starting fresh wipe...")
         else:
             percent = progress_data['progress_percent']
-            written_gb = progress_data['written'] / (1024**3)
-            total_gb = progress_data['total_size'] / (1024**3)
+            written_gb = progress_data['written'] / GIGABYTE
+            total_gb = progress_data['total_size'] / GIGABYTE
             print("✓ Found previous session")
             print(f"• Progress: {percent:.2f}% complete")
             print(f"• Written: {written_gb:.2f} GB / {total_gb:.2f} GB")
