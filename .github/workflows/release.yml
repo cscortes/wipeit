@@ -42,20 +42,26 @@ jobs:
     #   run: |
     #     twine upload dist/*
 
-    - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create GitHub Release with Distribution Files
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
         body: |
           ## Changes in this Release
 
-          See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+          See [DOCS/CHANGES.md](https://github.com/cscortes/wipeit/blob/${{ github.ref_name }}/DOCS/CHANGES.md) for detailed changes.
 
-          ## Installation
+          ## Installation Options
 
+          ### Option 1: Install from Release Wheel (Recommended)
+          Download the `.whl` file from the Assets section below, then:
+          ```bash
+          pip install wipeit-*.whl
+          ```
+
+          ### Option 2: Install from Source
           ```bash
           git clone https://github.com/cscortes/wipeit.git
           cd wipeit
@@ -65,7 +71,16 @@ jobs:
           ## Usage
 
           ```bash
+          # List devices
+          sudo wipeit --list
+
+          # Wipe a device (DESTRUCTIVE!)
           sudo wipeit /dev/sdx
           ```
+
+          ## ⚠️ WARNING
+          This tool **PERMANENTLY DESTROYS ALL DATA**. Use with extreme caution!
         draft: false
         prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

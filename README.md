@@ -86,7 +86,15 @@ A secure device wiping utility that overwrites block devices with random data.
 
 **⚠️ WARNING: Before installing, understand that this tool will PERMANENTLY DESTROY data! ⚠️**
 
-### Install from Source
+### Option 1: Install from GitHub Release (Recommended)
+
+Download the latest `.whl` file from the [Releases page](https://github.com/cscortes/wipeit/releases), then:
+
+```bash
+pip install wipeit-*.whl
+```
+
+### Option 2: Install from Source
 
 ```bash
 git clone https://github.com/cscortes/wipeit.git
