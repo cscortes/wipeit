@@ -308,6 +308,23 @@ def display_resume_info():
     return True
 
 
+def calculate_average_speed(total_bytes, elapsed_seconds):
+    """
+    Calculate average speed in MB/s.
+
+    Args:
+        total_bytes (int): Total bytes processed
+        elapsed_seconds (float): Time elapsed in seconds
+
+    Returns:
+        float: Average speed in MB/s, or 0 if elapsed_seconds is 0
+    """
+    if elapsed_seconds > 0:
+        return total_bytes / elapsed_seconds / MEGABYTE
+    else:
+        return 0.0
+
+
 def create_wipe_strategy(algorithm, device, size, chunk_size, written,
                          pretest_results, progress_callback):
     """
@@ -484,10 +501,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         clear_progress()
 
         total_time = time.time() - start_time
-        if total_time > 0:
-            avg_speed = size / total_time / MEGABYTE
-        else:
-            avg_speed = 0
+        avg_speed = calculate_average_speed(size, total_time)
 
         print("\n" + "=" * 50)
         print("WIPE COMPLETED")
