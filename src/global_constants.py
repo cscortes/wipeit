@@ -25,6 +25,10 @@ MAX_SMALL_CHUNK_SIZE = 10 * MEGABYTE  # 10MB max for small chunk algorithm
 # Progress file settings
 PROGRESS_FILE_NAME = "wipeit_progress.json"  # Single file for all devices
 
+# Linux ioctl constants
+# BLKGETSIZE64 - Get device size in bytes (64-bit)
+BLKGETSIZE64 = 0x80081272
+
 # Time conversion constants
 SECONDS_PER_MINUTE = 60
 SECONDS_PER_HOUR = 3600

@@ -16,6 +16,7 @@ import time
 from device_detector import DeviceDetector
 from disk_pretest import DiskPretest
 from global_constants import (
+    BLKGETSIZE64,
     DEFAULT_CHUNK_SIZE,
     DISPLAY_LINE_WIDTH,
     GIGABYTE,
@@ -78,9 +79,10 @@ def parse_size(size_str):
 
 
 def get_block_device_size(device):
+    """Get the size of a block device in bytes using BLKGETSIZE64 ioctl."""
     with open(device, 'rb') as fd:
         buf = bytearray(8)
-        fcntl.ioctl(fd.fileno(), 0x80081272, buf)  # BLKGETSIZE64
+        fcntl.ioctl(fd.fileno(), BLKGETSIZE64, buf)
         return struct.unpack('Q', buf)[0]
 
 
