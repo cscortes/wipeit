@@ -308,6 +308,42 @@ def display_resume_info():
     return True
 
 
+def handle_hdd_pretest(device, chunk_size, existing_pretest_results, written,
+                       size, device_id):
+    """
+    Handle HDD pretest: use existing results or run new pretest.
+
+    Args:
+        device (str): Device path
+        chunk_size (int): Chunk size in bytes
+        existing_pretest_results (dict or None): Previously saved pretest
+                                                  results
+        written (int): Bytes already written (for progress save)
+        size (int): Total device size
+        device_id (dict): Device identification info
+
+    Returns:
+        dict or None: Pretest results dictionary, or None if no pretest ran
+    """
+    if existing_pretest_results:
+        print("Using previous pretest results")
+        return existing_pretest_results
+
+    print("HDD detected - performing pretest to optimize "
+          "wiping algorithm...")
+    pretest = DiskPretest(device, chunk_size)
+    results = pretest.run_pretest()
+
+    if results:
+        pretest_results = results.to_dict()
+        save_progress(device, written, size, chunk_size,
+                      pretest_results, device_id)
+        return pretest_results
+    else:
+        print("Pretest failed, using standard algorithm")
+        return None
+
+
 def handle_resume(device):
     """
     Handle resume logic: load progress and display resume information.
@@ -383,20 +419,9 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             existing_pretest_results = None
 
         if disk_type == "HDD" and not skip_pretest:
-            if existing_pretest_results:
-                pretest_results = existing_pretest_results
-                print("Using previous pretest results")
-            else:
-                print("HDD detected - performing pretest to optimize "
-                      "wiping algorithm...")
-                pretest = DiskPretest(device, chunk_size)
-                results = pretest.run_pretest()
-                if results:
-                    pretest_results = results.to_dict()
-                    save_progress(device, written, size, chunk_size,
-                                  pretest_results, device_id)
-                else:
-                    print("Pretest failed, using standard algorithm")
+            pretest_results = handle_hdd_pretest(
+                device, chunk_size, existing_pretest_results,
+                written, size, device_id)
 
         if pretest_results:
             algorithm = pretest_results.get(
