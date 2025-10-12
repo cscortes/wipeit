@@ -24,6 +24,7 @@ from global_constants import (
     MEGABYTE,
     MIN_SIZE_BYTES,
     PROGRESS_FILE_EXPIRY_SECONDS,
+    PROGRESS_FILE_NAME,
     TERABYTE,
 )
 from wipe_strategy import (
@@ -84,15 +85,6 @@ def get_block_device_size(device):
         return struct.unpack('Q', buf)[0]
 
 
-def get_progress_file(device):
-    """Get the path to the progress file.
-
-    Note: Always returns 'wipeit_progress.json' regardless of device.
-    This means only one device can have active progress at a time.
-    """
-    return "wipeit_progress.json"
-
-
 def save_progress(device, written, total_size,
                   chunk_size, pretest_results=None, device_id=None):
     """
@@ -106,7 +98,7 @@ def save_progress(device, written, total_size,
         pretest_results: Optional pretest results
         device_id: Optional device unique identifiers (serial, model, etc.)
     """
-    progress_file = get_progress_file(device)
+    progress_file = PROGRESS_FILE_NAME
     progress_percent = (written / total_size) * 100 if total_size > 0 else 0
     progress_data = {
         'device': device,
@@ -138,7 +130,7 @@ def load_progress(device):
     Returns:
         dict: Progress data if valid, None otherwise
     """
-    progress_file = get_progress_file(device)
+    progress_file = PROGRESS_FILE_NAME
 
     if not os.path.exists(progress_file):
         return None
@@ -240,7 +232,7 @@ def load_progress(device):
 
 def clear_progress(device):
     """Clear progress file."""
-    progress_file = get_progress_file(device)
+    progress_file = PROGRESS_FILE_NAME
     try:
         if os.path.exists(progress_file):
             os.remove(progress_file)

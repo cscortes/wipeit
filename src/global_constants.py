@@ -22,8 +22,9 @@ DEFAULT_CHUNK_SIZE = 100 * MEGABYTE  # 100MB
 SMALL_CHUNK_SIZE = 10 * MEGABYTE     # 10MB
 MAX_SMALL_CHUNK_SIZE = 10 * MEGABYTE  # 10MB max for small chunk algorithm
 
-# Progress file expiration (24 hours in seconds)
-PROGRESS_FILE_EXPIRY_SECONDS = 24 * 3600
+# Progress file settings
+PROGRESS_FILE_NAME = "wipeit_progress.json"  # Single file for all devices
+PROGRESS_FILE_EXPIRY_SECONDS = 24 * 3600  # 24 hours
 
 # Time conversion constants
 SECONDS_PER_MINUTE = 60

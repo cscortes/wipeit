@@ -111,17 +111,12 @@ class TestProgressFileFunctions(unittest.TestCase):
         if os.path.exists(self.test_progress_file):
             os.remove(self.test_progress_file)
 
-    def test_get_progress_file(self):
-        """Test progress file path generation."""
-        # Should always return the same filename regardless of device
-        result = wipeit.get_progress_file(self.test_device)
-        expected = 'wipeit_progress.json'
-        self.assertEqual(result, expected)
+    def test_progress_file_constant(self):
+        """Test PROGRESS_FILE_NAME constant is defined correctly."""
+        from global_constants import PROGRESS_FILE_NAME
 
-        # Test with different device - should return same filename
-        result = wipeit.get_progress_file('/dev/nvme0n1')
-        expected = 'wipeit_progress.json'
-        self.assertEqual(result, expected)
+        # Should be the expected filename
+        self.assertEqual(PROGRESS_FILE_NAME, 'wipeit_progress.json')
 
     def test_save_progress(self):
         """Test saving progress to file."""
