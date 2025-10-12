@@ -388,13 +388,13 @@ class TestResumeFileFunctions(unittest.TestCase):
         if os.path.exists(self.test_progress_file):
             os.remove(self.test_progress_file)
 
-    def test_find_resume_files_empty(self):
-        """Test finding resume files when none exist."""
-        result = wipeit.find_resume_files()
-        self.assertEqual(len(result), 0)
+    def test_find_resume_file_none(self):
+        """Test finding resume file when none exist."""
+        result = wipeit.find_resume_file()
+        self.assertIsNone(result)
 
-    def test_find_resume_files_with_valid_files(self):
-        """Test finding resume files with valid files."""
+    def test_find_resume_file_with_valid_file(self):
+        """Test finding resume file with valid file."""
         # Create test progress file
         test_data = {
             'device': '/dev/sdb',
@@ -408,9 +408,9 @@ class TestResumeFileFunctions(unittest.TestCase):
         with open(self.test_progress_file, 'w') as f:
             json.dump(test_data, f)
 
-        result = wipeit.find_resume_files()
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['device'], '/dev/sdb')
+        result = wipeit.find_resume_file()
+        self.assertIsNotNone(result)
+        self.assertEqual(result['device'], '/dev/sdb')
 
     def test_display_resume_info_no_files(self):
         """Test display_resume_info with no resume files."""
@@ -438,7 +438,7 @@ class TestResumeFileFunctions(unittest.TestCase):
 
         self.assertTrue(result)
         output = mock_stdout.getvalue()
-        self.assertIn('Found previous wipe sessions', output)
+        self.assertIn('Found previous wipe session', output)
         self.assertIn('/dev/sdb', output)
         self.assertIn('25.00% complete', output)
 
@@ -637,8 +637,8 @@ class TestIntegration(unittest.TestCase):
             'RESUME OPTIONS', output,
             "User should see RESUME OPTIONS header")
         self.assertIn(
-            'Found previous wipe sessions', output,
-            "User should see message about previous sessions")
+            'Found previous wipe session', output,
+            "User should see message about previous session")
         self.assertIn(
             '/dev/sdb', output,
             "User should see device name in resume info")

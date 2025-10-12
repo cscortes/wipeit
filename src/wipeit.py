@@ -248,52 +248,60 @@ def clear_progress():
         print(f"Warning: Could not clear progress: {e}")
 
 
-def find_resume_files():
-    """Find progress file if it exists."""
-    progress_files = []
+def find_resume_file():
+    """
+    Find progress file if it exists.
+
+    Returns:
+        dict or None: Progress data if file exists and is valid, None otherwise
+    """
     progress_file = PROGRESS_FILE_NAME
 
     if os.path.exists(progress_file):
         try:
             with open(progress_file, 'r') as f:
-                progress_data = json.load(f)
-            progress_files.append(progress_data)
+                return json.load(f)
         except Exception:
             pass
 
-    return progress_files
+    return None
 
 
 def display_resume_info():
-    """Display available resume options."""
-    progress_files = find_resume_files()
+    """
+    Display available resume options.
 
-    if not progress_files:
+    Returns:
+        bool: True if progress file exists and was displayed, False otherwise
+    """
+    progress_data = find_resume_file()
+
+    if not progress_data:
         return False
 
     print("=" * 50)
     print("RESUME OPTIONS")
     print("=" * 50)
-    print("Found previous wipe sessions that can be resumed:")
+    print("Found previous wipe session that can be resumed:")
     print()
 
-    for progress_data in progress_files:
-        try:
-            device = progress_data['device']
-            written = progress_data['written']
-            total_size = progress_data['total_size']
-            progress_percent = progress_data['progress_percent']
-            timestamp = progress_data['timestamp']
+    try:
+        device = progress_data['device']
+        written = progress_data['written']
+        total_size = progress_data['total_size']
+        progress_percent = progress_data['progress_percent']
+        timestamp = progress_data['timestamp']
 
-            print(f"• Device: {device}")
-            print(f"  Progress: {progress_percent:.2f}% complete")
-            written_gb = written / (1024**3)
-            total_gb = total_size / (1024**3)
-            print(f"  Written: {written_gb:.2f} GB / {total_gb:.2f} GB")
-            print(f"  Started: {time.ctime(timestamp)}")
-            print()
-        except Exception as e:
-            print(f"Error reading progress data: {e}")
+        print(f"• Device: {device}")
+        print(f"  Progress: {progress_percent:.2f}% complete")
+        written_gb = written / (1024**3)
+        total_gb = total_size / (1024**3)
+        print(f"  Written: {written_gb:.2f} GB / {total_gb:.2f} GB")
+        print(f"  Started: {time.ctime(timestamp)}")
+        print()
+    except Exception as e:
+        print(f"Error reading progress data: {e}")
+        return False
 
     print("=" * 50)
 
