@@ -308,6 +308,44 @@ def display_resume_info():
     return True
 
 
+def create_wipe_strategy(algorithm, device, size, chunk_size, written,
+                         pretest_results, progress_callback):
+    """
+    Factory function to create the appropriate wipe strategy.
+
+    Args:
+        algorithm (str): Algorithm name ('adaptive_chunk', 'small_chunk',
+                         or 'standard')
+        device (str): Device path
+        size (int): Device size in bytes
+        chunk_size (int): Chunk size in bytes
+        written (int): Bytes already written
+        pretest_results (dict or None): Pretest results
+        progress_callback (callable): Progress callback function
+
+    Returns:
+        WipeStrategy: Instance of the appropriate strategy class
+    """
+    if algorithm == "adaptive_chunk":
+        print("Using adaptive chunk sizing for optimal performance")
+        return AdaptiveStrategy(
+            device, size, chunk_size, written, pretest_results,
+            progress_callback
+        )
+    elif algorithm == "small_chunk":
+        chunk_mb = min(chunk_size, MAX_SMALL_CHUNK_SIZE) / MEGABYTE
+        print(f"Using small chunk size: {chunk_mb:.0f} MB")
+        return SmallChunkStrategy(
+            device, size, chunk_size, written, pretest_results,
+            progress_callback
+        )
+    else:
+        return StandardStrategy(
+            device, size, chunk_size, written, pretest_results,
+            progress_callback
+        )
+
+
 def handle_hdd_pretest(device, chunk_size, existing_pretest_results, written,
                        size, device_id):
     """
@@ -436,24 +474,9 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             save_progress(device, written_bytes, total_bytes, chunk_bytes,
                           pretest_results, device_id)
 
-        if algorithm == "adaptive_chunk":
-            print("Using adaptive chunk sizing for optimal performance")
-            strategy = AdaptiveStrategy(
-                device, size, chunk_size, written, pretest_results,
-                progress_callback
-            )
-        elif algorithm == "small_chunk":
-            chunk_mb = min(chunk_size, MAX_SMALL_CHUNK_SIZE) / MEGABYTE
-            print(f"Using small chunk size: {chunk_mb:.0f} MB")
-            strategy = SmallChunkStrategy(
-                device, size, chunk_size, written, pretest_results,
-                progress_callback
-            )
-        else:
-            strategy = StandardStrategy(
-                device, size, chunk_size, written, pretest_results,
-                progress_callback
-            )
+        strategy = create_wipe_strategy(
+            algorithm, device, size, chunk_size, written,
+            pretest_results, progress_callback)
 
         strategy.wipe()
         written = strategy.written
