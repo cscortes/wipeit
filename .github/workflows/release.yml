@@ -34,12 +34,13 @@ jobs:
       run: |
         twine check dist/*
 
-    - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        twine upload dist/*
+    # PyPI upload disabled - keeping distribution local only
+    # - name: Publish to PyPI
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+    #   run: |
+    #     twine upload dist/*
 
     - name: Create GitHub Release
       uses: actions/create-release@v1
