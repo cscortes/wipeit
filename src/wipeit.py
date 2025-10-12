@@ -23,7 +23,6 @@ from global_constants import (
     MAX_SMALL_CHUNK_SIZE,
     MEGABYTE,
     MIN_SIZE_BYTES,
-    PROGRESS_FILE_EXPIRY_SECONDS,
     PROGRESS_FILE_NAME,
     TERABYTE,
 )
@@ -139,12 +138,6 @@ def load_progress(device):
         with open(progress_file, 'r') as f:
             progress_data = json.load(f)
 
-        # Check if progress is still valid (24 hours)
-        if (time.time() - progress_data['timestamp'] >
-                PROGRESS_FILE_EXPIRY_SECONDS):
-            print("Progress file is older than 24 hours, ignoring.")
-            return None
-
         # Verify device path matches
         if progress_data['device'] != device:
             print("Progress file is for a different device, ignoring.")
@@ -249,10 +242,7 @@ def find_resume_files():
         try:
             with open(progress_file, 'r') as f:
                 progress_data = json.load(f)
-            # Check if progress is still valid (24 hours)
-            if (time.time() - progress_data['timestamp'] <=
-                    PROGRESS_FILE_EXPIRY_SECONDS):
-                progress_files.append(progress_data)
+            progress_files.append(progress_data)
         except Exception:
             pass
 

@@ -23,7 +23,6 @@ from global_constants import (
     TEST_DEVICE_SIZE_100GB,
     TEST_DEVICE_SIZE_100MB,
     TEST_TIME_1_HOUR_SECONDS,
-    TEST_TIME_24_HOURS_PLUS_1_SECOND,
     TEST_TOTAL_SIZE_4GB,
     TEST_WRITTEN_1GB,
 )
@@ -164,25 +163,6 @@ class TestProgressFileFunctions(unittest.TestCase):
     def test_load_progress_nonexistent(self):
         """Test loading progress from nonexistent file."""
         result = wipeit.load_progress('/dev/nonexistent')
-        self.assertIsNone(result)
-
-    def test_load_progress_expired(self):
-        """Test loading progress from expired file."""
-        # Create an expired progress file (older than 24 hours)
-        test_data = {
-            'device': self.test_device,
-            'written': TEST_WRITTEN_1GB,
-            'total_size': TEST_TOTAL_SIZE_4GB,
-            'chunk_size': TEST_CHUNK_SIZE_100MB,
-            # 24 hours + 1 second ago
-            'timestamp': time.time() - TEST_TIME_24_HOURS_PLUS_1_SECOND,
-            'progress_percent': 25.0
-        }
-
-        with open(self.test_progress_file, 'w') as f:
-            json.dump(test_data, f)
-
-        result = wipeit.load_progress(self.test_device)
         self.assertIsNone(result)
 
     def test_load_progress_wrong_device(self):
@@ -447,24 +427,6 @@ class TestResumeFileFunctions(unittest.TestCase):
         result = wipeit.find_resume_files()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['device'], '/dev/sdb')
-
-    def test_find_resume_files_with_expired_files(self):
-        """Test finding resume files with expired files."""
-        # Create expired progress file
-        test_data = {
-            'device': '/dev/sdb',
-            'written': TEST_WRITTEN_1GB,
-            'total_size': TEST_TOTAL_SIZE_4GB,
-            'chunk_size': TEST_CHUNK_SIZE_100MB,
-            'timestamp': time.time() - 86401,  # Expired
-            'progress_percent': 25.0
-        }
-
-        with open(self.test_progress_file, 'w') as f:
-            json.dump(test_data, f)
-
-        result = wipeit.find_resume_files()
-        self.assertEqual(len(result), 0)
 
     def test_display_resume_info_no_files(self):
         """Test display_resume_info with no resume files."""

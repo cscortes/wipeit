@@ -24,7 +24,6 @@ MAX_SMALL_CHUNK_SIZE = 10 * MEGABYTE  # 10MB max for small chunk algorithm
 
 # Progress file settings
 PROGRESS_FILE_NAME = "wipeit_progress.json"  # Single file for all devices
-PROGRESS_FILE_EXPIRY_SECONDS = 24 * 3600  # 24 hours
 
 # Time conversion constants
 SECONDS_PER_MINUTE = 60
@@ -63,7 +62,6 @@ TEST_CHUNK_SIZE_100MB = 100 * MEGABYTE
 
 # Time test constants
 TEST_TIME_1_HOUR_SECONDS = 3600
-TEST_TIME_24_HOURS_PLUS_1_SECOND = 24 * 3600 + 1
 
 # Milestone test thresholds
 TEST_MILESTONE_5_PERCENT = 5
