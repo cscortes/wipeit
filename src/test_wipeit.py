@@ -18,6 +18,7 @@ from disk_pretest import DiskPretest
 from global_constants import (
     GIGABYTE,
     MEGABYTE,
+    PROGRESS_FILE_NAME,
     TERABYTE,
     TEST_CHUNK_SIZE_100MB,
     TEST_DEVICE_SIZE_100GB,
@@ -99,7 +100,7 @@ class TestProgressFileFunctions(unittest.TestCase):
     def setUp(self):
         """Set up test environment."""
         self.test_device = '/dev/sdb'
-        self.test_progress_file = 'wipeit_progress.json'
+        self.test_progress_file = PROGRESS_FILE_NAME
 
         # Clean up any existing test progress files
         if os.path.exists(self.test_progress_file):
@@ -376,7 +377,7 @@ class TestResumeFileFunctions(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.test_progress_file = 'wipeit_progress.json'
+        self.test_progress_file = PROGRESS_FILE_NAME
 
         # Clean up any existing test progress file
         if os.path.exists(self.test_progress_file):
@@ -581,7 +582,7 @@ class TestIntegration(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.test_progress_file = 'wipeit_progress.json'
+        self.test_progress_file = PROGRESS_FILE_NAME
         if os.path.exists(self.test_progress_file):
             os.remove(self.test_progress_file)
 
@@ -741,7 +742,7 @@ class TestIntegration(unittest.TestCase):
                       "Must show current serial")
         self.assertIn('WHAT TO DO', output,
                       "Must provide instructions to user")
-        self.assertIn('rm wipeit_progress.json', output,
+        self.assertIn(f'rm {PROGRESS_FILE_NAME}', output,
                       "Must tell user how to clear progress")
 
     @patch('wipeit.DeviceDetector')

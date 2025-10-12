@@ -196,7 +196,7 @@ def load_progress(device):
                     print("     - Run: sudo wipeit --resume <device>")
                     print()
                     print("  3. To clear this progress file and start fresh:")
-                    print("     rm wipeit_progress.json")
+                    print(f"     rm {PROGRESS_FILE_NAME}")
                     print("=" * 70)
                     sys.exit(1)
 
@@ -221,7 +221,7 @@ def load_progress(device):
                     print("  2. To start a fresh wipe on this drive:")
                     print(f"     sudo wipeit {device}")
                     print("  3. To clear the old progress file:")
-                    print("     rm wipeit_progress.json")
+                    print(f"     rm {PROGRESS_FILE_NAME}")
                     print("=" * 70)
                     sys.exit(1)
 
@@ -251,7 +251,7 @@ def clear_progress():
 def find_resume_files():
     """Find progress file if it exists."""
     progress_files = []
-    progress_file = 'wipeit_progress.json'
+    progress_file = PROGRESS_FILE_NAME
 
     if os.path.exists(progress_file):
         try:
