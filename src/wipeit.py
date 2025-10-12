@@ -532,8 +532,13 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         sys.exit(1)
 
 
-def main():
-    """Main function for CLI interface."""
+def setup_argument_parser():
+    """
+    Set up and return the command-line argument parser.
+
+    Returns:
+        argparse.ArgumentParser: Configured argument parser
+    """
     parser = argparse.ArgumentParser(
         description='Secure device wiping utility',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -567,6 +572,12 @@ Examples:
         action='version',
         version='wipeit 1.4.2')
 
+    return parser
+
+
+def main():
+    """Main function for CLI interface."""
+    parser = setup_argument_parser()
     args = parser.parse_args()
 
     # Check if running as root
