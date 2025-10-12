@@ -165,23 +165,6 @@ class TestProgressFileFunctions(unittest.TestCase):
         result = wipeit.load_progress('/dev/nonexistent')
         self.assertIsNone(result)
 
-    def test_load_progress_wrong_device(self):
-        """Test loading progress with wrong device."""
-        test_data = {
-            'device': '/dev/sdc',  # Different device
-            'written': TEST_WRITTEN_1GB,
-            'total_size': TEST_TOTAL_SIZE_4GB,
-            'chunk_size': TEST_CHUNK_SIZE_100MB,
-            'timestamp': time.time(),
-            'progress_percent': 25.0
-        }
-
-        with open(self.test_progress_file, 'w') as f:
-            json.dump(test_data, f)
-
-        result = wipeit.load_progress(self.test_device)
-        self.assertIsNone(result)
-
     def test_clear_progress(self):
         """Test clearing progress file."""
         # Create a test progress file

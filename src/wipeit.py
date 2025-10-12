@@ -138,11 +138,6 @@ def load_progress(device):
         with open(progress_file, 'r') as f:
             progress_data = json.load(f)
 
-        # Verify device path matches
-        if progress_data['device'] != device:
-            print("Progress file is for a different device, ignoring.")
-            return None
-
         # Verify device identity if available
         if 'device_id' in progress_data and progress_data['device_id']:
             try:
