@@ -499,7 +499,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.4.1')
+        version='wipeit 1.4.2')
 
     args = parser.parse_args()
 

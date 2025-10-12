@@ -11,6 +11,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2025-10-12
+
+### Added
+- **GitHub Release Wheel Distribution**: Wheel and source distribution files now automatically attached to GitHub releases
+  - Updated workflow to use `softprops/action-gh-release@v1`
+  - Users can download `.whl` files directly from releases page
+  - Installation: `pip install wipeit-*.whl`
+
+### Changed
+- **Installation Documentation**: Updated README with GitHub release wheel installation as recommended method
+  - Option 1: Download wheel from releases (recommended)
+  - Option 2: Install from source
+- **Release Workflow**: Enhanced to attach distribution files as release assets
+- **Architecture Documentation**: Completely updated ARCH.md to reflect current codebase
+  - Documented Strategy pattern (WipeStrategy classes)
+  - Added DiskPretest class documentation
+  - Updated file structure with all current modules
+  - Added comprehensive mermaid diagrams
+  - Documented testing architecture (157 tests, 95% coverage)
+
+### Removed
+- **PyPI References**: Removed all PyPI installation documentation
+  - Distribution is now exclusively via GitHub releases
+  - No PyPI upload attempted
+  - Removed PyPI upload step from CI/CD workflow
+
 ## [1.4.1] - 2025-10-11
 
 ### Fixed
