@@ -3,7 +3,7 @@
 # This Makefile provides targets for building, testing, and maintaining
 # the wipeit project according to the programming style guide.
 
-.PHONY: info tests lint pre-git-prep security reports build help
+.PHONY: info tests lint pre-git-prep security reports build help test-workflows
 
 # Default target - show help information
 info: help
@@ -54,6 +54,11 @@ help:
 	@echo "                   - Creates source distribution (.tar.gz)"
 	@echo "                   - Displays created packages with sizes"
 	@echo ""
+	@echo "  test-workflows - Test GitHub Actions workflows locally before pushing"
+	@echo "                   - Validates all workflow inline Python tests"
+	@echo "                   - Prevents CI/CD failures by catching issues early"
+	@echo "                   - Recommended to run before git push"
+	@echo ""
 	@echo "Usage examples:"
 	@echo "  make           # Show this help"
 	@echo "  make info      # Show this help"
@@ -63,6 +68,7 @@ help:
 	@echo "  make reports   # Generate comprehensive codebase reports"
 	@echo "  make clean_files  # Clean invisible characters from files"
 	@echo "  make pre-git-prep  # Fix code style before committing"
+	@echo "  make test-workflows  # Test GitHub Actions locally"
 	@echo "  make build     # Build distribution packages for pip installation"
 
 # Run comprehensive test suite including flake8 style checks
@@ -331,3 +337,9 @@ build:
 	@echo "  pip install dist/wipeit-$$(grep '^version' pyproject.toml | cut -d'"' -f2)-py3-none-any.whl"
 	@echo ""
 	@echo "Note: Distribution packages are for local use only"
+
+# Test GitHub Actions workflows locally
+test-workflows:
+	@echo "Testing GitHub Actions workflows locally..."
+	@echo ""
+	@./test-github-actions.sh
