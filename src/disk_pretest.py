@@ -100,7 +100,9 @@ class DiskPretest:
             IOError: If write operations fail
         """
         try:
-            size = self._get_device_size()
+            # Import here to avoid circular dependency (wipeit imports disk_pretest)
+            from wipeit import get_block_device_size
+            size = get_block_device_size(self.device_path)
 
             if not self.quiet:
                 self._display_header(size)
@@ -161,18 +163,6 @@ class DiskPretest:
             raise RuntimeError("No pretest has been run yet")
         return self._last_results.recommended_algorithm
 
-    def _get_device_size(self):
-        """
-        Get device size in bytes.
-
-        Returns:
-            int: Device size in bytes
-
-        Raises:
-            OSError: If device size cannot be determined
-        """
-        from wipeit import get_block_device_size
-        return get_block_device_size(self.device_path)
 
     def _test_position(self, position, name):
         """

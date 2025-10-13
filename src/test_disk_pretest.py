@@ -96,12 +96,10 @@ class TestDiskPretest(unittest.TestCase):
 class TestPretestExecution(unittest.TestCase):
     """Test pretest execution methods."""
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
-    def test_test_position(self, mock_time, mock_fsync, mock_file,
-                           mock_get_size):
+    def test_test_position(self, mock_time, mock_fsync, mock_file):
         """Test _test_position method."""
         mock_time.side_effect = [1000.0, 1001.0]
         mock_file_handle = mock_file.return_value.__enter__.return_value
@@ -115,12 +113,10 @@ class TestPretestExecution(unittest.TestCase):
         mock_file_handle.seek.assert_called_once_with(0)
         mock_file_handle.write.assert_called_once()
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
-    def test_test_position_with_output(self, mock_time, mock_fsync,
-                                       mock_file, mock_get_size):
+    def test_test_position_with_output(self, mock_time, mock_fsync, mock_file):
         """Test _test_position with console output."""
         mock_time.side_effect = [1000.0, 1001.0]
         mock_file_handle = mock_file.return_value.__enter__.return_value
@@ -135,7 +131,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn('Testing beginning', output)
         self.assertIn('Beginning:', output)
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -161,7 +157,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn(results.recommended_algorithm,
                       ['standard', 'adaptive_chunk', 'small_chunk'])
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -187,7 +183,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn('Speed variance:', output)
         self.assertIn('Recommended algorithm:', output)
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     def test_run_pretest_error_handling(self, mock_get_size):
         """Test run_pretest handles errors gracefully."""
         mock_get_size.side_effect = OSError("Permission denied")
@@ -197,7 +193,7 @@ class TestPretestExecution(unittest.TestCase):
 
         self.assertIsNone(results)
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -312,7 +308,7 @@ class TestAlgorithmRecommendation(unittest.TestCase):
 class TestIntegration(unittest.TestCase):
     """Integration tests for complete workflow."""
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -341,7 +337,7 @@ class TestIntegration(unittest.TestCase):
         recommendation = pretest.get_recommendation()
         self.assertEqual(recommendation, result_dict['recommended_algorithm'])
 
-    @patch('disk_pretest.DiskPretest._get_device_size')
+    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
