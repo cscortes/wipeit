@@ -30,8 +30,7 @@ class TestPretestResults(unittest.TestCase):
             average_speed=90.0,
             speed_variance=20.0,
             recommended_algorithm='standard',
-            reason='Test reason',
-            timestamp=1234567890.0
+            reason='Test reason'
         )
 
         self.assertEqual(results.speeds, speeds)
@@ -40,7 +39,6 @@ class TestPretestResults(unittest.TestCase):
         self.assertEqual(results.speed_variance, 20.0)
         self.assertEqual(results.recommended_algorithm, 'standard')
         self.assertEqual(results.reason, 'Test reason')
-        self.assertEqual(results.timestamp, 1234567890.0)
 
     def test_to_dict(self):
         """Test conversion to dictionary format."""
@@ -50,8 +48,7 @@ class TestPretestResults(unittest.TestCase):
             average_speed=90.0,
             speed_variance=20.0,
             recommended_algorithm='adaptive_chunk',
-            reason='High variance',
-            timestamp=1234567890.0
+            reason='High variance'
         )
 
         result_dict = results.to_dict()

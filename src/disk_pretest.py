@@ -26,7 +26,7 @@ class PretestResults:
     """
 
     def __init__(self, speeds, positions, average_speed, speed_variance,
-                 recommended_algorithm, reason, timestamp):
+                 recommended_algorithm, reason):
         """
         Initialize pretest results.
 
@@ -37,7 +37,6 @@ class PretestResults:
             speed_variance: Speed variance (max - min) in MB/s
             recommended_algorithm: Recommended wiping algorithm
             reason: Reason for recommendation
-            timestamp: Unix timestamp when test was performed
         """
         self.speeds = speeds
         self.positions = positions
@@ -45,7 +44,6 @@ class PretestResults:
         self.speed_variance = speed_variance
         self.recommended_algorithm = recommended_algorithm
         self.reason = reason
-        self.timestamp = timestamp
 
     def to_dict(self):
         """
@@ -134,8 +132,7 @@ class DiskPretest:
                 average_speed=avg_speed,
                 speed_variance=variance,
                 recommended_algorithm=algorithm,
-                reason=reason,
-                timestamp=0.0
+                reason=reason
             )
 
             self._last_results = results
