@@ -183,7 +183,7 @@ class DiskPretest:
 
         with open(self.device_path, 'wb') as f:
             f.seek(position)
-            f.write(b'\x00' * self.chunk_size)
+            f.write(os.urandom(self.chunk_size))
             f.flush()
             os.fsync(f.fileno())
 

@@ -217,7 +217,7 @@ class StandardStrategy(WipeStrategy):
             current_chunk_size = min(self.chunk_size,
                                      self.total_size - self.written)
 
-            chunk_data = b'\x00' * current_chunk_size
+            chunk_data = os.urandom(current_chunk_size)
             self._write_chunk(chunk_data)
 
             self.written += current_chunk_size
@@ -353,7 +353,7 @@ class AdaptiveStrategy(WipeStrategy):
         while self.written < self.total_size:
             current_chunk_size = self._calculate_adaptive_chunk_size()
 
-            chunk_data = b'\x00' * current_chunk_size
+            chunk_data = os.urandom(current_chunk_size)
             chunk_duration = self._write_chunk(chunk_data)
 
             if chunk_duration > 0:
