@@ -76,7 +76,7 @@ jobs:
       run: |
         echo "Testing progress file workflow..."
         python -c "
-        from wipeit import save_progress, load_progress, clear_progress, find_resume_files, display_resume_info
+        from wipeit import save_progress, load_progress, clear_progress, find_resume_file, display_resume_info
         import os
 
         # Test complete workflow
@@ -97,8 +97,8 @@ jobs:
         print('✅ Progress loaded')
 
         # Test resume file detection
-        resume_files = find_resume_files()
-        assert len(resume_files) == 1, 'Should find one resume file'
+        resume_file = find_resume_file()
+        assert resume_file is not None, 'Should find one resume file'
         print('✅ Resume file detection working')
 
         # Test display (capture output)
@@ -109,11 +109,11 @@ jobs:
         display_resume_info()
         output = sys.stdout.getvalue()
         sys.stdout = old_stdout
-        assert 'Found pending wipe operations' in output, 'Should display resume info'
+        assert 'Found previous wipe session' in output, 'Should display resume info'
         print('✅ Resume info display working')
 
         # Clear progress
-        clear_progress(device)
+        clear_progress()
         progress = load_progress(device)
         assert progress is None, 'Progress should be cleared'
         print('✅ Progress cleared')
