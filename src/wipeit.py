@@ -541,7 +541,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.4.3')
+        version='wipeit 1.4.4')
 
     return parser
 

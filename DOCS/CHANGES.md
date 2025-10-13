@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2025-10-13
+
+### Fixed
+- **CI/CD Integration Tests**: Fixed `test-ci.sh` to use updated function signatures
+  - Updated `clear_progress(device)` → `clear_progress()` (no arguments)
+  - Updated `find_resume_files()` → `find_resume_file()` (returns dict or None)
+
+### Documentation
+- **Complete Documentation Update**: All documentation files updated to reflect refactored code
+  - `ARCH.md`: Updated function listings, removed obsolete functions, added new utility functions
+  - `PROGRAMMING_STYLE_GUIDE.md`: Updated circular dependency example to use DeviceDetector
+  - `TESTDESIGN.md`: Updated function names to match current implementation
+
 ## [1.4.3] - 2025-10-13
 
 ### Fixed
