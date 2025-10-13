@@ -774,7 +774,7 @@ class TestIntegration(unittest.TestCase):
         """
         # Mock device size
         mock_size.return_value = 1000 * 1024 * 1024 * 1024
-        
+
         # Create real progress file
         test_data = {
             'device': '/dev/sdb',
@@ -834,7 +834,7 @@ class TestIntegration(unittest.TestCase):
         """Test main() doesn't show resume info when no progress exists."""
         # Mock device size
         mock_size.return_value = 1000 * 1024 * 1024 * 1024
-        
+
         # NO progress file created
 
         # Mock DeviceDetector
@@ -868,7 +868,7 @@ class TestIntegration(unittest.TestCase):
         """Test that resume with mismatched device halts with clear error."""
         # Mock device size
         mock_size.return_value = 1000 * 1024 * 1024 * 1024
-        
+
         # Create progress file with device_id
         saved_device_id = {
             'serial': 'ORIGINAL_SERIAL_123',

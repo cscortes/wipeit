@@ -29,20 +29,19 @@ class TestDeviceDetector(unittest.TestCase):
         self.assertEqual(detector.device_name, 'sdb')
         self.assertEqual(detector._cached_info, {})
 
-    @patch('device_detector.subprocess.check_output')
-    def test_get_size(self, mock_check_output):
+    @patch('device_detector.DeviceDetector.get_block_device_size')
+    def test_get_size(self, mock_get_block_size):
         """Test get_size method."""
-        mock_check_output.return_value = b'1099511627776\n'  # 1TB (1024^4)
+        mock_get_block_size.return_value = TEST_DEVICE_SIZE_1TB
         detector = device_detector.DeviceDetector('/dev/sdb')
         size = detector.get_size()
         self.assertEqual(size, TEST_DEVICE_SIZE_1TB)
-        mock_check_output.assert_called_once_with(['blockdev', '--getsize64',
-                                                   '/dev/sdb'])
+        mock_get_block_size.assert_called_once_with('/dev/sdb')
 
-    @patch('device_detector.subprocess.check_output')
-    def test_get_size_error(self, mock_check_output):
+    @patch('device_detector.DeviceDetector.get_block_device_size')
+    def test_get_size_error(self, mock_get_block_size):
         """Test get_size method with error."""
-        mock_check_output.side_effect = subprocess.CalledProcessError(1, 'cmd')
+        mock_get_block_size.side_effect = OSError("Test error")
         detector = device_detector.DeviceDetector('/dev/sdb')
         with self.assertRaises(OSError):
             detector.get_size()
