@@ -53,13 +53,13 @@ In this case:
 
 Example:
 ```python
-def run_pretest(self):
-    """Run disk pretest."""
-    try:
-        # Import here to avoid circular dependency (wipeit imports disk_pretest)
-        from wipeit import get_block_device_size
-        size = get_block_device_size(self.device_path)
-        # ... rest of method
+    def run_pretest(self):
+        """Run disk pretest."""
+        try:
+            # Import here to avoid circular dependency (wipeit imports disk_pretest)
+            from device_detector import DeviceDetector
+            size = DeviceDetector.get_block_device_size(self.device_path)
+            # ... rest of method
 ```
 
 ### Rationale

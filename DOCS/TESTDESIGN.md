@@ -44,7 +44,7 @@ This document outlines the comprehensive testing strategy for the wipeit secure 
 
 #### 1.3 Resume File Detection Tests
 - **`TestResumeFileFunctions`** - Resume file scanning
-  - `find_resume_files()` - Directory scanning
+  - `find_resume_file()` - Progress file detection
   - `display_resume_info()` - Resume information display
   - Multiple resume files handling
   - Expired file filtering

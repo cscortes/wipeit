@@ -314,9 +314,8 @@ graph TD
 **Key Functions**:
 - `save_progress()` - Save progress with device_id, use os.fsync() for immediate persistence
 - `load_progress()` - Load and verify device_id matches current device
-- `clear_progress()` - Remove progress file
-- `get_progress_file()` - Returns `'wipeit_progress.json'` (single file for all devices)
-- `find_resume_files()` - Find existing progress file
+- `clear_progress()` - Remove progress file (no arguments, uses PROGRESS_FILE_NAME constant)
+- `find_resume_file()` - Find existing progress file (returns dict or None)
 - `display_resume_info()` - Show resume options at startup
 
 **Progress File Format**:
@@ -401,19 +400,22 @@ graph TD
 
 #### **Core Functions**
 - `wipe_device()` - Main wiping orchestration
-- `get_block_device_size()` - Get device size
 
 #### **Progress Management**
 - `save_progress()` - Save with device_id and os.fsync()
 - `load_progress()` - Load and verify device_id
 - `clear_progress()` - Remove progress file
-- `get_progress_file()` - Get progress filename
-- `find_resume_files()` - Find available progress
+- `find_resume_file()` - Find available progress (returns dict or None)
 - `display_resume_info()` - Show resume options
 
 #### **Utility Functions**
 - `parse_size()` - Convert size strings to bytes
 - `list_all_devices()` - List available block devices
+- `calculate_average_speed()` - Calculate average wipe speed
+- `create_wipe_strategy()` - Factory function for creating appropriate WipeStrategy
+- `handle_resume()` - Handle resume logic and user interaction
+- `handle_hdd_pretest()` - Handle HDD pretest logic
+- `setup_argument_parser()` - Configure command-line argument parser
 
 ### Testing Architecture
 
