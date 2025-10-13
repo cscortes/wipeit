@@ -62,11 +62,12 @@ class TestPretestResults(unittest.TestCase):
         self.assertEqual(result_dict['recommended_algorithm'],
                          'adaptive_chunk')
         self.assertEqual(result_dict['reason'], 'High variance')
-        self.assertIn('analysis', result_dict)
-        self.assertEqual(result_dict['analysis']['recommended_algorithm'],
-                         'adaptive_chunk')
-        self.assertEqual(result_dict['analysis']['reason'],
-                         'High variance')
+        # Verify dictionary contains all required keys
+        self.assertIn('speeds', result_dict)
+        self.assertIn('average_speed', result_dict)
+        self.assertIn('speed_variance', result_dict)
+        self.assertIn('recommended_algorithm', result_dict)
+        self.assertIn('reason', result_dict)
 
 
 class TestDiskPretest(unittest.TestCase):
@@ -337,7 +338,6 @@ class TestIntegration(unittest.TestCase):
         self.assertIn('speeds', result_dict)
         self.assertIn('average_speed', result_dict)
         self.assertIn('speed_variance', result_dict)
-        self.assertIn('analysis', result_dict)
         self.assertIn('recommended_algorithm', result_dict)
         self.assertIn('reason', result_dict)
 
@@ -348,9 +348,9 @@ class TestIntegration(unittest.TestCase):
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
-    def test_backward_compatibility_format(self, mock_time, mock_fsync,
-                                           mock_file, mock_get_size):
-        """Test results match legacy format for backward compatibility."""
+    def test_result_dict_format(self, mock_time, mock_fsync,
+                                mock_file, mock_get_size):
+        """Test results dictionary contains all required fields."""
         mock_get_size.return_value = 100 * GIGABYTE
 
         time_values = [1000.0 + i * 1.0 for i in range(10)]
@@ -363,24 +363,20 @@ class TestIntegration(unittest.TestCase):
         results = pretest.run_pretest()
         result_dict = results.to_dict()
 
+        # Verify all required keys are present
         required_keys = [
             'speeds', 'average_speed', 'speed_variance',
-            'analysis', 'recommended_algorithm', 'reason'
+            'recommended_algorithm', 'reason'
         ]
         for key in required_keys:
             self.assertIn(key, result_dict)
 
-        self.assertIn('recommended_algorithm', result_dict['analysis'])
-        self.assertIn('reason', result_dict['analysis'])
-
-        self.assertEqual(
-            result_dict['recommended_algorithm'],
-            result_dict['analysis']['recommended_algorithm']
-        )
-        self.assertEqual(
-            result_dict['reason'],
-            result_dict['analysis']['reason']
-        )
+        # Verify types and basic structure
+        self.assertIsInstance(result_dict['speeds'], list)
+        self.assertIsInstance(result_dict['average_speed'], float)
+        self.assertIsInstance(result_dict['speed_variance'], float)
+        self.assertIsInstance(result_dict['recommended_algorithm'], str)
+        self.assertIsInstance(result_dict['reason'], str)
 
 
 if __name__ == '__main__':

@@ -1074,8 +1074,8 @@ class TestHDDPretest(unittest.TestCase):
 
         # Verify pretest was performed
         self.assertIsNotNone(result)
-        self.assertIn('analysis', result)
-        self.assertIn('recommended_algorithm', result['analysis'])
+        self.assertIn('recommended_algorithm', result)
+        self.assertIn('reason', result)
 
         # Check output contains expected messages
         output = mock_stdout.getvalue()
@@ -1113,7 +1113,7 @@ class TestHDDPretest(unittest.TestCase):
             result = results.to_dict() if results else None
 
         # Verify adaptive algorithm is recommended
-        self.assertEqual(result['analysis']['recommended_algorithm'],
+        self.assertEqual(result['recommended_algorithm'],
                          'adaptive_chunk')
 
     @patch('wipeit.get_block_device_size')
@@ -1146,7 +1146,7 @@ class TestHDDPretest(unittest.TestCase):
             result = results.to_dict() if results else None
 
         # Verify small chunk algorithm is recommended
-        self.assertEqual(result['analysis']['recommended_algorithm'],
+        self.assertEqual(result['recommended_algorithm'],
                          'small_chunk')
 
 

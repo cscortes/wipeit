@@ -52,16 +52,12 @@ class PretestResults:
         Convert results to dictionary format.
 
         Returns:
-            dict: Results in legacy format for backward compatibility
+            dict: Results in dictionary format with speeds, recommendations
         """
         return {
             'speeds': self.speeds,
             'average_speed': self.average_speed,
             'speed_variance': self.speed_variance,
-            'analysis': {
-                'recommended_algorithm': self.recommended_algorithm,
-                'reason': self.reason
-            },
             'recommended_algorithm': self.recommended_algorithm,
             'reason': self.reason
         }
