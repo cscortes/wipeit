@@ -14,6 +14,107 @@ to dev in the TODO.md as a low priority item.
 - make sure we have unittest code coverage for all code.
 - make sure all dependencies for release and debug are being updated in pyproject.toml
 
+## Import Organization
+
+**All imports MUST be at the top of files** immediately after the module docstring.
+
+### Import Order
+
+Organize imports in the following order, with a blank line between each group:
+
+1. **Standard library imports** (e.g., `os`, `sys`, `time`)
+2. **Third-party library imports** (e.g., `numpy`, `pytest`)
+3. **Local application imports** (e.g., `from global_constants import ...`)
+
+Example:
+```python
+#!/usr/bin/env python3
+"""
+Module docstring here.
+"""
+
+import os
+import sys
+import time
+
+from global_constants import MEGABYTE, GIGABYTE
+from device_detector import DeviceDetector
+```
+
+### Exception: Circular Dependency Imports
+
+The ONLY acceptable exception to top-level imports is when avoiding circular
+dependencies between modules.
+
+In this case:
+- Import inside the function/method where it's needed
+- Add a comment explaining the circular dependency
+- This should be a rare occurrence
+
+Example:
+```python
+def run_pretest(self):
+    """Run disk pretest."""
+    try:
+        # Import here to avoid circular dependency (wipeit imports disk_pretest)
+        from wipeit import get_block_device_size
+        size = get_block_device_size(self.device_path)
+        # ... rest of method
+```
+
+### Rationale
+
+- **Clarity**: All dependencies are visible at the top of the file
+- **Performance**: Imports are loaded once when module loads
+- **Standards**: Follows PEP 8 and Python community conventions
+- **Maintainability**: Easy to see what a module depends on
+- **Tooling**: Import sorting tools (isort, black) work better
+
+### Prohibited Patterns
+
+❌ **Bad - Import inside function without reason:**
+```python
+def process_data():
+    import os  # No circular dependency - should be at top!
+    return os.path.exists('/tmp/file')
+```
+
+❌ **Bad - Multiple imports scattered throughout file:**
+```python
+import os
+
+def func1():
+    pass
+
+import sys  # Wrong - should be at top with os
+
+def func2():
+    pass
+```
+
+✅ **Good - All imports at top:**
+```python
+import os
+import sys
+
+def func1():
+    pass
+
+def func2():
+    pass
+```
+
+✅ **Good - Exception for circular dependency:**
+```python
+import os
+import sys
+
+def process():
+    # Import here to avoid circular dependency
+    from module_b import helper
+    return helper(data)
+```
+
 ## Documentation File Organization
 
 **All documentation files MUST be in the `DOCS/` directory** with the following exception:
