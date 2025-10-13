@@ -51,9 +51,23 @@ make tests
 **If tests pass:**
 - Continue to the next step
 
+### 6. Test GitHub Actions Workflows
+Test GitHub Actions workflows locally to prevent CI/CD failures:
+```bash
+make test-workflows
+```
+**If workflow tests fail:**
+- **STOP** the release process
+- Fix the failing workflow tests
+- Re-run until all workflow tests pass
+- Do not proceed until all workflow tests pass
+
+**If workflow tests pass:**
+- Continue to the next step
+
 ## Version Management
 
-6. Update Version Number
+### 7. Update Version Number
 Bump the semantic version number according to the change type:
 - **Patch** (x.y.Z): Bug fixes and minor changes
 - **Minor** (x.Y.0): New features, backward compatible
@@ -67,8 +81,8 @@ Update version in the following locations:
 
 ## Documentation Updates
 
-7. Update Documentation
-Review and update all relevant documentation, display "Reviewd and/or Updated file (Name of file)"
+### 8. Update Documentation
+Review and update all relevant documentation, display "Reviewed and/or Updated file (Name of file)"
 - `CHANGES.md` - Add release notes with changes, fixes, and new features
 - `README.md` - Update usage examples, requirements, or features if needed
 - `TESTDESIGN.md` - Document new tests or testing approaches
@@ -80,26 +94,39 @@ Stop here and ask dev if he wants to continue, because everything else has passe
 
 If he says yes, then continue, else STOP
 
-8. Create Version Tag
+### 9. Create Version Tag
 Create a Git tag for the new version:
 ```bash
 git tag -a v<VERSION> -m "Release version <VERSION>"
 ```
 Example: `git tag -a v1.3.0 -m "Release version 1.3.0"`
 
-9. Commit Changes
+### 10. Commit Changes
 Stage and commit all release-related changes:
 ```bash
 git add .
 git commit -m "Release version <VERSION>"
 ```
 
-10. Push to Repository
+### 11. Push to Repository
 Push commits and tags to the remote repository:
 ```bash
 git push origin master
 git push origin v<VERSION>
 ```
 
+## Post-Release
+
+### 12. Build Distribution
+Build the distribution packages:
+```bash
+python -m build
+```
+
+### 13. Verify Distribution
+- Check that wheel and source distribution were created in `dist/`
+- Verify version numbers in distribution filenames match the release version
+
 ## Release Complete ✓
 
+The release process is now complete. Verify that the new version is available in the repository and all documentation is up to date.
