@@ -5,10 +5,8 @@ Overwrites block devices with random data for secure data destruction.
 """
 
 import argparse
-import fcntl
 import json
 import os
-import struct
 import subprocess
 import sys
 import time
@@ -16,7 +14,6 @@ import time
 from device_detector import DeviceDetector
 from disk_pretest import DiskPretest
 from global_constants import (
-    BLKGETSIZE64,
     DEFAULT_CHUNK_SIZE,
     DISPLAY_LINE_WIDTH,
     GIGABYTE,
@@ -76,32 +73,6 @@ def parse_size(size_str) -> int:
         raise ValueError("Buffer size must not exceed 1T")
 
     return size_bytes
-
-
-def get_block_device_size(device: str) -> int:
-    """
-    Get the size of a block device in bytes using the BLKGETSIZE64 ioctl.
-
-    This function directly queries the Linux kernel for the device size using
-    the BLKGETSIZE64 ioctl command, which returns the device size as a 64-bit
-    unsigned integer. This is more reliable than parsing /proc or /sys files.
-
-    Args:
-        device (str): Path to the block device
-                      (e.g., '/dev/sda', '/dev/nvme0n1')
-
-    Returns:
-        int: Size of the device in bytes
-
-    Raises:
-        FileNotFoundError: If the device path does not exist
-        PermissionError: If insufficient permissions to access the device
-        OSError: If the ioctl call fails (e.g., not a block device)
-    """
-    with open(device, 'rb') as fd:
-        buf = bytearray(8)
-        fcntl.ioctl(fd.fileno(), BLKGETSIZE64, buf)
-        return struct.unpack('Q', buf)[0]
 
 
 def save_progress(device, written, total_size,
@@ -456,7 +427,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
     device_id = None  # Initialize to None for exception handlers
 
     try:
-        size = get_block_device_size(device)
+        size = DeviceDetector.get_block_device_size(device)
 
         detector = DeviceDetector(device)
         disk_type, confidence, details = detector.detect_type()

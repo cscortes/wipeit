@@ -9,6 +9,7 @@ pretest functionality including speed testing and algorithm recommendation.
 import os
 import time
 
+from device_detector import DeviceDetector
 from global_constants import (
     DEFAULT_CHUNK_SIZE,
     GIGABYTE,
@@ -100,9 +101,7 @@ class DiskPretest:
             IOError: If write operations fail
         """
         try:
-            # Import here to avoid circular dependency (wipeit imports disk_pretest)
-            from wipeit import get_block_device_size
-            size = get_block_device_size(self.device_path)
+            size = DeviceDetector.get_block_device_size(self.device_path)
 
             if not self.quiet:
                 self._display_header(size)
@@ -162,7 +161,6 @@ class DiskPretest:
         if self._last_results is None:
             raise RuntimeError("No pretest has been run yet")
         return self._last_results.recommended_algorithm
-
 
     def _test_position(self, position, name):
         """

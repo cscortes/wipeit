@@ -131,7 +131,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn('Testing beginning', output)
         self.assertIn('Beginning:', output)
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -157,7 +157,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn(results.recommended_algorithm,
                       ['standard', 'adaptive_chunk', 'small_chunk'])
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -183,7 +183,7 @@ class TestPretestExecution(unittest.TestCase):
         self.assertIn('Speed variance:', output)
         self.assertIn('Recommended algorithm:', output)
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     def test_run_pretest_error_handling(self, mock_get_size):
         """Test run_pretest handles errors gracefully."""
         mock_get_size.side_effect = OSError("Permission denied")
@@ -193,7 +193,7 @@ class TestPretestExecution(unittest.TestCase):
 
         self.assertIsNone(results)
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -308,7 +308,7 @@ class TestAlgorithmRecommendation(unittest.TestCase):
 class TestIntegration(unittest.TestCase):
     """Integration tests for complete workflow."""
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')
@@ -337,7 +337,7 @@ class TestIntegration(unittest.TestCase):
         recommendation = pretest.get_recommendation()
         self.assertEqual(recommendation, result_dict['recommended_algorithm'])
 
-    @patch('wipeit.get_block_device_size')
+    @patch('device_detector.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.fsync')
     @patch('time.time')

@@ -6,10 +6,12 @@ This module provides the DeviceDetector class which encapsulates all device
 detection and information gathering functionality.
 """
 
+import fcntl
 import os
+import struct
 import subprocess
 
-from global_constants import GIGABYTE
+from global_constants import BLKGETSIZE64, GIGABYTE
 
 
 class DeviceDetector:
@@ -33,17 +35,44 @@ class DeviceDetector:
 
     def get_size(self):
         """
-        Get device size in bytes using blockdev command.
+        Get device size in bytes using BLKGETSIZE64 ioctl.
 
         Returns:
             int: Device size in bytes
+
+        Raises:
+            FileNotFoundError: If device path does not exist
+            PermissionError: If insufficient permissions
+            OSError: If ioctl call fails
         """
-        try:
-            size = subprocess.check_output(['blockdev', '--getsize64',
-                                            self.device_path]).decode().strip()
-            return int(size)
-        except Exception as e:
-            raise OSError(f"Failed to get device size: {e}")
+        return DeviceDetector.get_block_device_size(self.device_path)
+
+    @staticmethod
+    def get_block_device_size(device: str) -> int:
+        """
+        Get the size of a block device in bytes using the BLKGETSIZE64 ioctl.
+
+        This function directly queries the Linux kernel for the device size
+        using the BLKGETSIZE64 ioctl command, which returns the device size
+        as a 64-bit unsigned integer. This is more reliable than parsing
+        /proc or /sys files.
+
+        Args:
+            device (str): Path to the block device
+                          (e.g., '/dev/sda', '/dev/nvme0n1')
+
+        Returns:
+            int: Size of the device in bytes
+
+        Raises:
+            FileNotFoundError: If the device path does not exist
+            PermissionError: If insufficient permissions to access the device
+            OSError: If the ioctl call fails (e.g., not a block device)
+        """
+        with open(device, 'rb') as fd:
+            buf = bytearray(8)
+            fcntl.ioctl(fd.fileno(), BLKGETSIZE64, buf)
+            return struct.unpack('Q', buf)[0]
 
     def get_device_properties(self):
         """

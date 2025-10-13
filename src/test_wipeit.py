@@ -756,13 +756,15 @@ class TestIntegration(unittest.TestCase):
     @patch('os.geteuid', return_value=0)
     @patch('os.path.exists', return_value=True)
     @patch('builtins.input', return_value='n')
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
     @patch('wipeit.load_progress', return_value=None)
     @patch('wipeit.clear_progress')
     @patch('sys.exit')
     def test_main_shows_resume_prompt_when_progress_exists(
             self, mock_exit, mock_clear_progress, mock_load_progress,
-            mock_detector_class, mock_input, mock_path_exists, mock_geteuid):
+            mock_detector_class, mock_size, mock_input, mock_path_exists,
+            mock_geteuid):
         """Test that main() displays resume info when progress file exists.
 
         This is a critical user-facing feature: when starting wipeit with
@@ -770,6 +772,9 @@ class TestIntegration(unittest.TestCase):
         1. RESUME OPTIONS section with details
         2. "Use --resume flag to continue" message
         """
+        # Mock device size
+        mock_size.return_value = 1000 * 1024 * 1024 * 1024
+        
         # Create real progress file
         test_data = {
             'device': '/dev/sdb',
@@ -817,14 +822,19 @@ class TestIntegration(unittest.TestCase):
     @patch('os.geteuid', return_value=0)
     @patch('os.path.exists', return_value=True)
     @patch('builtins.input', return_value='n')
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
     @patch('wipeit.load_progress', return_value=None)
     @patch('wipeit.clear_progress')
     @patch('sys.exit')
     def test_main_no_resume_prompt_when_no_progress(
             self, mock_exit, mock_clear_progress, mock_load_progress,
-            mock_detector_class, mock_input, mock_path_exists, mock_geteuid):
+            mock_detector_class, mock_size, mock_input, mock_path_exists,
+            mock_geteuid):
         """Test main() doesn't show resume info when no progress exists."""
+        # Mock device size
+        mock_size.return_value = 1000 * 1024 * 1024 * 1024
+        
         # NO progress file created
 
         # Mock DeviceDetector
@@ -850,10 +860,15 @@ class TestIntegration(unittest.TestCase):
     @patch('os.geteuid', return_value=0)
     @patch('sys.exit')
     @patch('builtins.input', return_value='n')  # Mock user saying 'no'
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
     def test_resume_with_mismatched_device_halts(
-            self, mock_detector_class, mock_input, mock_exit, mock_geteuid):
+            self, mock_detector_class, mock_size, mock_input, mock_exit,
+            mock_geteuid):
         """Test that resume with mismatched device halts with clear error."""
+        # Mock device size
+        mock_size.return_value = 1000 * 1024 * 1024 * 1024
+        
         # Create progress file with device_id
         saved_device_id = {
             'serial': 'ORIGINAL_SERIAL_123',
@@ -906,13 +921,13 @@ class TestIntegration(unittest.TestCase):
         self.assertIn(f'rm {PROGRESS_FILE_NAME}', output,
                       "Must tell user how to clear progress")
 
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
-    @patch('wipeit.get_block_device_size')
     @patch('wipeit.StandardStrategy')
     @patch('sys.exit')
     def test_keyboard_interrupt_saves_actual_progress(
-            self, mock_exit, mock_strategy_class, mock_get_size,
-            mock_detector_class):
+            self, mock_exit, mock_strategy_class, mock_detector_class,
+            mock_get_size):
         """Test that KeyboardInterrupt saves actual progress from strategy."""
         # Setup mocks
         mock_get_size.return_value = TEST_TOTAL_SIZE_4GB
@@ -1044,7 +1059,7 @@ class TestIntegration(unittest.TestCase):
 class TestHDDPretest(unittest.TestCase):
     """Test HDD pretest functionality."""
 
-    @patch('wipeit.get_block_device_size')
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.urandom')
     @patch('time.time')
@@ -1085,7 +1100,7 @@ class TestHDDPretest(unittest.TestCase):
         self.assertIn('Testing end of disk', output)
         self.assertIn('PRETEST ANALYSIS', output)
 
-    @patch('wipeit.get_block_device_size')
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.urandom')
     @patch('time.time')
@@ -1116,7 +1131,7 @@ class TestHDDPretest(unittest.TestCase):
         self.assertEqual(result['recommended_algorithm'],
                          'adaptive_chunk')
 
-    @patch('wipeit.get_block_device_size')
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('os.urandom')
     @patch('time.time')
@@ -1153,12 +1168,12 @@ class TestHDDPretest(unittest.TestCase):
 class TestWipeDeviceIntegration(unittest.TestCase):
     """Test wipe_device function with pretest integration."""
 
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
-    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('time.time')
     def test_wipe_device_with_adaptive_chunk(self, mock_time, mock_file,
-                                             mock_size, mock_detector_class):
+                                             mock_detector_class, mock_size):
         """Test wipe_device with adaptive chunk - CRITICAL BUG TEST."""
         mock_size.return_value = TEST_DEVICE_SIZE_100MB
 
@@ -1209,12 +1224,12 @@ class TestWipeDeviceIntegration(unittest.TestCase):
                             else:
                                 raise
 
+    @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
-    @patch('wipeit.get_block_device_size')
     @patch('builtins.open', new_callable=mock_open)
     @patch('time.time')
     def test_adaptive_chunk_sizing_calculations(
-            self, mock_time, mock_file, mock_size, mock_detector_class):
+            self, mock_time, mock_file, mock_detector_class, mock_size):
         """Test that adaptive chunk sizing produces integers."""
         mock_size.return_value = 100 * 1024 * 1024
 
