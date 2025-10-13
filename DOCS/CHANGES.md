@@ -11,6 +11,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.3] - 2025-10-13
+
+### Fixed
+- **CRITICAL: Random Data Wiping**: Fixed bug where device was being overwritten with zeros instead of random data
+  - Changed all wipe operations to use `os.urandom()` for cryptographically secure random data
+  - Affects StandardStrategy, AdaptiveStrategy, and DiskPretest
+  - Now properly meets security requirements for secure data destruction
+  - Impact: Slightly slower due to random data generation, but significantly more secure
+
+### Changed
+- **Code Refactoring**: Improved code organization based on human review of AI-generated code
+  - Moved `get_block_device_size()` from wipeit.py to DeviceDetector class as static method
+  - Consolidated device size functionality using ioctl (BLKGETSIZE64) instead of subprocess
+  - Removed circular import dependencies between modules
+  - Cleaned up import organization (all imports at top of files)
+  - Removed redundant wrapper functions and duplicate code
+  - Removed unused `timestamp` parameter from PretestResults
+  - Removed redundant `analysis` dictionary from PretestResults.to_dict()
+
+### Added
+- **Test Coverage**: Added comprehensive tests for utility functions
+  - New TestUtilityFunctions class with 17 test methods
+  - Tests for `calculate_average_speed()`, `create_wipe_strategy()`, `handle_resume()`, `handle_hdd_pretest()`, `setup_argument_parser()`
+  - Removed redundant tests already covered in test_device_detector.py
+  - All 167 tests pass
+
+### Documentation
+- **Programming Style Guide**: Added import organization guidelines
+  - All imports must be at top of files
+  - Exception only for circular dependencies with explanatory comment
+  - Three-tier import ordering: stdlib, third-party, local
+
 ## [1.4.2] - 2025-10-12
 
 ### Added

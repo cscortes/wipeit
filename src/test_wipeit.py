@@ -692,7 +692,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.4.2', output)
+        self.assertIn('wipeit 1.4.3', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
