@@ -85,7 +85,7 @@ save_progress(device, 1024*1024*1024, 4*1024*1024*1024, 100*1024*1024)
 progress = load_progress(device)
 if progress:
     print(f'  Progress loaded: {progress[\"progress_percent\"]:.2f}% complete')
-clear_progress(device)
+clear_progress()
 print('  Progress workflow completed')
 "
 print_status "Progress file functionality working"
@@ -115,7 +115,7 @@ print_status "Edge case testing completed"
 echo ""
 echo "🔗 Testing integration workflow..."
 python3 -c "
-from wipeit import save_progress, load_progress, clear_progress, find_resume_files
+from wipeit import save_progress, load_progress, clear_progress, find_resume_file
 import os
 
 # Complete workflow test
@@ -135,12 +135,12 @@ assert progress['device'] == device, 'Device should match'
 print('  ✅ Progress loaded')
 
 # Test resume file detection
-resume_files = find_resume_files()
-assert len(resume_files) == 1, 'Should find one resume file'
+resume_file = find_resume_file()
+assert resume_file is not None, 'Should find one resume file'
 print('  ✅ Resume file detection working')
 
 # Clear progress
-clear_progress(device)
+clear_progress()
 progress = load_progress(device)
 assert progress is None, 'Progress should be cleared'
 print('  ✅ Progress cleared')

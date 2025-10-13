@@ -133,7 +133,7 @@ python3 -c "from wipeit import save_progress; save_progress('/dev/test', 1024, 4
 python3 -c "from wipeit import load_progress; print(load_progress('/dev/test'))"
 
 # Test progress file cleanup
-python3 -c "from wipeit import clear_progress; clear_progress('/dev/test')"
+python3 -c "from wipeit import clear_progress; clear_progress()"
 ```
 
 ### 3. Functional Tests
