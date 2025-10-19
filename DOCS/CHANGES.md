@@ -11,6 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2025-10-19
+
+### Changed
+- **Project Organization**: Moved shell scripts to `scripts/` directory
+  - `test-ci.sh` → `scripts/test-ci.sh`
+  - `test-github-actions.sh` → `scripts/test-github-actions.sh`
+  - Updated all references in Makefile and documentation
+  - Improved project structure and organization
+
+### Documentation
+- **Updated References**: All documentation now references scripts in `scripts/` directory
+  - Makefile: Updated `test-workflows` target path
+  - DOCS/CHANGES.md: Updated script references
+  - DOCS/CI-CD.md: Updated all script paths and examples
+
 ## [1.6.0] - 2025-10-19
 
 ### Added
@@ -136,7 +151,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.4] - 2025-10-13
 
 ### Fixed
-- **CI/CD Integration Tests**: Fixed `test-ci.sh` to use updated function signatures
+- **CI/CD Integration Tests**: Fixed `scripts/test-ci.sh` to use updated function signatures
   - Updated `clear_progress(device)` → `clear_progress()` (no arguments)
   - Updated `find_resume_files()` → `find_resume_file()` (returns dict or None)
 
@@ -489,7 +504,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Issue and PR templates** for better project management
 - **Dependabot configuration** for automated dependency updates
 - **CI/CD documentation** (DOCS/CI-CD.md)
-- **Local CI testing script** (test-ci.sh)
+- **Local CI testing script** (scripts/test-ci.sh)
 - **Status badges** in README for CI/CD visibility
 - **Estimated finish time display** at 5% progress milestones
 

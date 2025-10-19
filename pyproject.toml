@@ -1,6 +1,6 @@
 [project]
 name = "wipeit"
-version = "1.6.0"
+version = "1.6.1"
 description = "A secure device wiping utility that overwrites block devices with random data"
 authors = [
     {name = "Luis Cortes", email = "mrluiscortes@gmail.com"}

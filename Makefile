@@ -342,4 +342,4 @@ build:
 test-workflows:
 	@echo "Testing GitHub Actions workflows locally..."
 	@echo ""
-	@./test-github-actions.sh
+	@./scripts/test-github-actions.sh

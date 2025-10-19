@@ -130,7 +130,7 @@ coverage report
 ### Pre-commit Testing
 ```bash
 # Run the CI simulation script
-./test-ci.sh
+./scripts/test-ci.sh
 
 # Run specific test categories
 python3 test_wipeit.py TestParseSize -v
@@ -237,7 +237,7 @@ coverage report
 ```bash
 # Ensure proper permissions
 chmod +x wipeit.py
-chmod +x test-ci.sh
+chmod +x scripts/test-ci.sh
 ```
 
 #### Dependency Issues
@@ -258,7 +258,7 @@ python3 -u test_wipeit.py -v 2>&1 | tee test-output.log
 ### Development Workflow
 1. Create feature branch
 2. Make changes
-3. Run local tests: `./test-ci.sh`
+3. Run local tests: `./scripts/test-ci.sh`
 4. Commit changes
 5. Push to GitHub
 6. Create pull request
