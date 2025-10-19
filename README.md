@@ -72,7 +72,7 @@ A secure device wiping utility that overwrites block devices with random data.
 ### Configuration Options
 - **Buffer Size**: Configurable from 1MB to 1TB (default: 100MB)
 - **Skip Pretest**: Option to bypass HDD pretest for faster start
-- **Resume Flag**: Explicit --resume option for continuing interrupted wipes
+- **Resume Flag**: Auto-detects drive by serial number for seamless resume
 - **List Devices**: Dedicated --list option for device enumeration
 
 ### Technical Features
@@ -143,9 +143,10 @@ Found pending wipe operations:
    Written: 1.00 GB / 4.00 GB
    Buffer size: 100 MB
    Started: Thu Oct  9 18:04:00 2025
-   Resume command: sudo ./wipeit.py --resume /dev/sdb
+   Resume command: sudo ./wipeit.py --resume
 
-NOTE: To resume any operation, use: sudo ./wipeit.py --resume <device>
+NOTE: To resume any operation, simply run: sudo ./wipeit.py --resume
+NOTE: The tool will automatically find the correct drive by serial number
 NOTE: To start fresh, the progress file will be overwritten
 ==================================================
 
@@ -334,20 +335,32 @@ Progress: 15.42% | Written: 19.74 GB | Speed: 82.15 MB/s | ETA: 17.23 min
 ^C
 Wipe interrupted at 19.74 GB (15.42% complete)
 Progress saved. To resume, run:
-  sudo ./wipeit.py --resume /dev/sdb
+  sudo ./wipeit.py --resume
 ```
+
+The tool will automatically find the correct drive by matching the serial number from the progress file.
 
 #### Resume an interrupted wipe
 
 To continue from where you left off:
 
 ```bash
-sudo ./wipeit.py --resume /dev/sdb
+sudo ./wipeit.py --resume
 ```
+
+The tool will automatically find the correct drive by matching the serial number from the progress file.
 
 **Example resume session with HDD and pretest results:**
 ```bash
-$ sudo ./wipeit.py --resume /dev/sdb
+$ sudo ./wipeit.py --resume
+
+======================================================================
+AUTO-DETECTING RESUME DRIVE
+======================================================================
+✓ Found matching drive: /dev/sdb
+  Serial: WD-WMAYUA1234567
+  Model: Hitachi_HTS545032B9A300
+  Size: 128.00 GB
 
 Detected disk type: HDD (confidence: HIGH)
    Detection details: Rotational device
@@ -373,7 +386,15 @@ Progress: 16.12% | Written: 20.64 GB | Speed: 85.32 MB/s | ETA: 16.45 min | Buff
 
 **Example resume session without pretest results:**
 ```bash
-$ sudo ./wipeit.py --resume /dev/sdb
+$ sudo ./wipeit.py --resume
+
+======================================================================
+AUTO-DETECTING RESUME DRIVE
+======================================================================
+✓ Found matching drive: /dev/sdb
+  Serial: WD-WMAYUA1234567
+  Model: Hitachi_HTS545032B9A300
+  Size: 128.00 GB
 
 Detected disk type: HDD (confidence: HIGH)
    Detection details: Rotational device
@@ -435,7 +456,7 @@ $ sudo ./wipeit.py /dev/sdb
    Started: Wed Oct  1 18:30:45 2025
 
 Options:
-   1. Resume previous session: sudo ./wipeit.py --resume /dev/sdb
+   1. Resume previous session: sudo ./wipeit.py --resume
    2. Start fresh (will overwrite previous progress)
 
 Start fresh wipe? (y/n): n
@@ -576,8 +597,10 @@ sudo wipeit --buffer-size 2G /dev/sdd
 
 ### 4. Resume an interrupted wipe
 ```bash
-sudo ./wipeit.py --resume /dev/sdb
+sudo ./wipeit.py --resume
 ```
+
+The tool will automatically find the correct drive by matching the serial number from the progress file.
 
 ### 5. Check what devices are available
 ```bash

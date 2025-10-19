@@ -499,9 +499,9 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v1.2.0+)
-- **Total Test Classes**: 10
-- **Total Test Cases**: 75
+### Current Test Coverage (v1.5.0+)
+- **Total Test Classes**: 11
+- **Total Test Cases**: 82
 - **Test Coverage Breakdown**:
   - `TestParseSize`: 5 tests
   - `TestProgressFileFunctions`: 7 tests
@@ -513,6 +513,7 @@ jobs:
   - `TestWipeDeviceIntegration`: 2 tests (Added in 0.3.1)
   - `TestMountChecking`: 6 tests (Added in 1.1.0)
   - `TestDeviceDetector`: 35 tests (Added in 1.1.0+)
+  - `TestAutoDetectResume`: 7 tests (Added in 1.5.0)
 
 ### DeviceDetector Test Coverage
 The new `TestDeviceDetector` class provides comprehensive coverage of the object-oriented device detection functionality:
@@ -566,6 +567,23 @@ This test design document provides comprehensive coverage for all wipeit feature
 - Added comprehensive test coverage for HDD pretest functionality
 - Added critical bug test for float-to-integer conversion in adaptive chunk sizing
 - Increased test count from 34 to 40 tests
+### TestAutoDetectResume Test Coverage (v1.5.0)
+The new `TestAutoDetectResume` class provides comprehensive coverage of the auto-detection resume functionality:
+
+#### **Core Function Tests**
+- `test_find_device_by_serial_model_found()` - Successful device auto-detection by serial and model
+- `test_find_device_by_serial_model_not_found()` - No matching device scenario
+- `test_find_device_by_serial_model_no_progress_file()` - Missing progress file handling
+- `test_find_device_by_serial_model_no_serial_in_progress()` - Progress file without serial number
+
+#### **Integration Tests**
+- `test_setup_argument_parser_resume_without_device()` - Argument parser validation
+- `test_main_resume_without_device_auto_detects()` - Full integration with main()
+- `test_main_resume_without_device_no_match()` - Error handling when no match found
+
+### Recent Additions
+- **Added auto-detect resume test coverage (7 new tests)** (v1.5.0)
+- **Increased total test count from 75 to 82 tests** (v1.5.0)
 - Added comprehensive mount checking test coverage (6 new tests)
 - **Added comprehensive DeviceDetector class test coverage (35 new tests)**
 - **Increased total test count from 40 to 75 tests**

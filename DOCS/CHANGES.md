@@ -11,6 +11,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2025-10-19
+
+### Added
+- **Auto-Detect Resume Drive**: Major enhancement to `--resume` functionality
+  - `--resume` no longer requires device specification
+  - Automatically searches all drives and matches by serial number and model
+  - Device path (e.g., `/dev/sdb`) can now change between sessions
+  - New function `find_device_by_serial_model()` searches and matches drives
+  - Maintains backwards compatibility: can still specify device manually
+  - Shows clear feedback about which drive was detected
+  - Provides helpful error messages when no matching drive is found
+
+### Changed
+- **Argument Parser**: Updated help text and examples
+  - Device argument is now optional with `--resume`
+  - Updated help: "Resume previous wipe session (auto-detects drive by serial number)"
+  - Updated examples to show both `wipeit --resume` and `wipeit --resume /dev/sdb`
+
+### Improved
+- **User Messages**: Updated all `--resume` instructions throughout the codebase
+  - KeyboardInterrupt message now shows auto-detection info
+  - Device mismatch errors reference auto-detection
+  - Resume prompts clarify no device specification needed
+
+### Tests
+- **Comprehensive Test Coverage**: Added 7 new tests in `TestAutoDetectResume` class
+  - `test_find_device_by_serial_model_found()` - Successful auto-detection
+  - `test_find_device_by_serial_model_not_found()` - No matching device
+  - `test_find_device_by_serial_model_no_progress_file()` - Missing progress file
+  - `test_find_device_by_serial_model_no_serial_in_progress()` - Missing serial
+  - `test_setup_argument_parser_resume_without_device()` - Parser validation
+  - `test_main_resume_without_device_auto_detects()` - Integration test
+  - `test_main_resume_without_device_no_match()` - Error handling
+  - All 174 tests passing with 97% code coverage
+
 ## [1.4.4] - 2025-10-13
 
 ### Fixed

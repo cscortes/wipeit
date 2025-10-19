@@ -692,7 +692,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.4.4', output)
+        self.assertIn('wipeit 1.5.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -770,7 +770,7 @@ class TestIntegration(unittest.TestCase):
         This is a critical user-facing feature: when starting wipeit with
         a device argument, if a progress file exists, the user should see:
         1. RESUME OPTIONS section with details
-        2. "Use --resume flag to continue" message
+        2. "To continue the previous session" message with instructions
         """
         # Mock device size
         mock_size.return_value = 1000 * 1024 * 1024 * 1024
@@ -815,8 +815,8 @@ class TestIntegration(unittest.TestCase):
             '500.00 GB / 1000.00 GB', output,
             "User should see written/total GB")
         self.assertIn(
-            'Use --resume flag to continue', output,
-            "User should see instruction to use --resume flag")
+            'To continue the previous session', output,
+            "User should see instruction to use --resume")
 
     @patch('sys.argv', ['wipeit.py', '/dev/sdb'])
     @patch('os.geteuid', return_value=0)
@@ -853,7 +853,7 @@ class TestIntegration(unittest.TestCase):
             'RESUME OPTIONS', output,
             "Should not see RESUME OPTIONS when no progress")
         self.assertNotIn(
-            'Use --resume flag to continue', output,
+            'To continue the previous session', output,
             "Should not see resume instruction when no progress")
 
     @patch('sys.argv', ['wipeit.py', '--resume', '/dev/sdb'])
@@ -1377,6 +1377,269 @@ class TestWipeDeviceIntegration(unittest.TestCase):
         # (it may exit later due to user abort, but that's expected)
 
 
+class TestAutoDetectResume(unittest.TestCase):
+    """Test auto-detection of resume drive functionality."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.test_progress_file = PROGRESS_FILE_NAME
+        # Clean up any existing progress file
+        if os.path.exists(self.test_progress_file):
+            os.remove(self.test_progress_file)
+
+    def tearDown(self):
+        """Clean up test fixtures."""
+        if os.path.exists(self.test_progress_file):
+            os.remove(self.test_progress_file)
+
+    @patch('subprocess.check_output')
+    @patch('wipeit.DeviceDetector')
+    def test_find_device_by_serial_model_found(
+            self, mock_detector_class, mock_subprocess):
+        """Test successful device auto-detection by serial and model."""
+        # Create progress file with device_id
+        device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+        progress_data = {
+            'device': '/dev/sdb',
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0,
+            'device_id': device_id
+        }
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(progress_data, f)
+
+        # Mock lsblk to return devices
+        mock_subprocess.return_value = b'NAME TYPE\nsda disk\nsdb disk\n'
+
+        # Mock DeviceDetector for two devices
+        mock_detector_sda = MagicMock()
+        mock_detector_sda.get_unique_id.return_value = {
+            'serial': 'DIFFERENT_SERIAL',
+            'model': 'Different_Model',
+            'size': 1000000000
+        }
+
+        mock_detector_sdb = MagicMock()
+        mock_detector_sdb.get_unique_id.return_value = device_id
+
+        def mock_detector_side_effect(device_path):
+            if device_path == '/dev/sda':
+                return mock_detector_sda
+            elif device_path == '/dev/sdb':
+                return mock_detector_sdb
+            return MagicMock()
+
+        mock_detector_class.side_effect = mock_detector_side_effect
+
+        # Test the function
+        detected_device, detected_id = wipeit.find_device_by_serial_model()
+
+        # Verify it found the right device
+        self.assertEqual(detected_device, '/dev/sdb')
+        self.assertEqual(detected_id['serial'], 'TEST123456')
+        self.assertEqual(detected_id['model'], 'TestDrive_Model')
+
+    @patch('subprocess.check_output')
+    @patch('wipeit.DeviceDetector')
+    def test_find_device_by_serial_model_not_found(
+            self, mock_detector_class, mock_subprocess):
+        """Test when no device matches the saved serial."""
+        # Create progress file with device_id
+        device_id = {
+            'serial': 'ORIGINAL_SERIAL',
+            'model': 'Original_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+        progress_data = {
+            'device': '/dev/sdb',
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0,
+            'device_id': device_id
+        }
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(progress_data, f)
+
+        # Mock lsblk to return devices
+        mock_subprocess.return_value = b'NAME TYPE\nsda disk\nsdb disk\n'
+
+        # Mock DeviceDetector - neither device matches
+        mock_detector = MagicMock()
+        mock_detector.get_unique_id.return_value = {
+            'serial': 'DIFFERENT_SERIAL',
+            'model': 'Different_Model',
+            'size': 1000000000
+        }
+        mock_detector_class.return_value = mock_detector
+
+        # Test the function
+        detected_device, detected_id = wipeit.find_device_by_serial_model()
+
+        # Verify nothing was found
+        self.assertIsNone(detected_device)
+        self.assertIsNone(detected_id)
+
+    def test_find_device_by_serial_model_no_progress_file(self):
+        """Test when there's no progress file."""
+        # Don't create progress file
+
+        # Test the function
+        detected_device, detected_id = wipeit.find_device_by_serial_model()
+
+        # Verify nothing was found
+        self.assertIsNone(detected_device)
+        self.assertIsNone(detected_id)
+
+    @patch('subprocess.check_output')
+    @patch('wipeit.DeviceDetector')
+    def test_find_device_by_serial_model_no_serial_in_progress(
+            self, mock_detector_class, mock_subprocess):
+        """Test when progress file has no serial number."""
+        # Create progress file without device_id
+        progress_data = {
+            'device': '/dev/sdb',
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time(),
+            'progress_percent': 25.0
+        }
+        with open(self.test_progress_file, 'w') as f:
+            json.dump(progress_data, f)
+
+        # Test the function
+        detected_device, detected_id = wipeit.find_device_by_serial_model()
+
+        # Verify nothing was found
+        self.assertIsNone(detected_device)
+        self.assertIsNone(detected_id)
+
+    def test_setup_argument_parser_resume_without_device(self):
+        """Test that --resume works without device specification."""
+        parser = wipeit.setup_argument_parser()
+        args = parser.parse_args(['--resume'])
+        self.assertTrue(args.resume)
+        self.assertIsNone(args.device)
+
+    @patch('sys.argv', ['wipeit.py', '--resume'])
+    @patch('os.geteuid', return_value=0)
+    @patch('sys.exit')
+    @patch('wipeit.find_device_by_serial_model')
+    @patch('wipeit.find_resume_file')
+    def test_main_resume_without_device_auto_detects(
+            self, mock_find_resume, mock_find_device,
+            mock_exit, mock_geteuid):
+        """Test main() with --resume and no device calls auto-detection."""
+        # Mock find_resume_file to return progress data
+        device_id = {
+            'serial': 'TEST123456',
+            'model': 'TestDrive_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+        mock_find_resume.return_value = {
+            'device': '/dev/sdb',
+            'device_id': device_id,
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'progress_percent': 25.0,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time()
+        }
+
+        # Mock find_device_by_serial_model to return detected device
+        mock_find_device.return_value = ('/dev/sdc', device_id)
+
+        # Mock other necessary functions
+        with patch('wipeit.parse_size',
+                   return_value=TEST_CHUNK_SIZE_100MB):
+            with patch('os.path.exists', return_value=True):
+                with patch('wipeit.DeviceDetector') as mock_detector_class:
+                    mock_detector = MagicMock()
+                    mock_detector.is_mounted.return_value = (False, [])
+                    mock_detector.display_info = MagicMock()
+                    mock_detector_class.return_value = mock_detector
+
+                    # Mock load_progress
+                    with patch('wipeit.load_progress',
+                               return_value=mock_find_resume.return_value):
+                        # Mock display_resume_info
+                        with patch('wipeit.display_resume_info',
+                                   return_value=False):
+                            # Mock wipe_device to avoid going deep
+                            with patch('wipeit.wipe_device'):
+                                with patch('builtins.input',
+                                           return_value='y'):
+                                    from io import StringIO
+                                    with patch('sys.stdout',
+                                               new_callable=StringIO) \
+                                            as mock_stdout:
+                                        wipeit.main()
+
+        output = mock_stdout.getvalue()
+
+        # Verify auto-detection was called
+        mock_find_device.assert_called_once()
+
+        # Verify output shows detection
+        self.assertIn('AUTO-DETECTING RESUME DRIVE', output)
+        self.assertIn('Found matching drive', output)
+
+    @patch('sys.argv', ['wipeit.py', '--resume'])
+    @patch('os.geteuid', return_value=0)
+    @patch('sys.exit')
+    @patch('wipeit.find_device_by_serial_model')
+    @patch('wipeit.find_resume_file')
+    @patch('wipeit.list_all_devices')
+    def test_main_resume_without_device_no_match(
+            self, mock_list_devices, mock_find_resume,
+            mock_find_device, mock_exit, mock_geteuid):
+        """Test error handling when no matching device found."""
+        # Mock find_resume_file to return progress data
+        device_id = {
+            'serial': 'ORIGINAL_SERIAL',
+            'model': 'Original_Model',
+            'size': TEST_TOTAL_SIZE_4GB
+        }
+        mock_find_resume.return_value = {
+            'device': '/dev/sdb',
+            'device_id': device_id,
+            'written': TEST_WRITTEN_1GB,
+            'total_size': TEST_TOTAL_SIZE_4GB,
+            'progress_percent': 25.0,
+            'chunk_size': TEST_CHUNK_SIZE_100MB,
+            'timestamp': time.time()
+        }
+
+        # Mock find_device_by_serial_model to return None (not found)
+        mock_find_device.return_value = (None, None)
+
+        from io import StringIO
+        with patch('sys.stdout', new_callable=StringIO) as mock_stdout:
+            wipeit.main()
+
+        output = mock_stdout.getvalue()
+
+        # Verify error message shown
+        self.assertIn('ERROR: Could not find matching drive', output)
+        self.assertIn('ORIGINAL_SERIAL', output)
+        self.assertIn('POSSIBLE REASONS', output)
+
+        # Verify list_all_devices was called
+        mock_list_devices.assert_called()
+
+        # Verify sys.exit was called with error code
+        mock_exit.assert_called_with(1)
+
+
 if __name__ == '__main__':
     # Create a test suite
     test_suite = unittest.TestSuite()
@@ -1392,6 +1655,7 @@ if __name__ == '__main__':
         TestIntegration,
         TestHDDPretest,
         TestWipeDeviceIntegration,
+        TestAutoDetectResume,
     ]
 
     for test_class in test_classes:

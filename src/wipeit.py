@@ -163,8 +163,8 @@ def load_progress(device):
                     print()
                     print("  2. If you want to resume the ORIGINAL drive:")
                     print("     - Reconnect the original drive")
-                    print("     - Verify it appears as the same device path")
-                    print("     - Run: sudo wipeit --resume <device>")
+                    print("     - Run: sudo wipeit --resume")
+                    print("       (auto-detects drive by serial number)")
                     print()
                     print("  3. To clear this progress file and start fresh:")
                     print(f"     rm {PROGRESS_FILE_NAME}")
@@ -217,6 +217,70 @@ def clear_progress():
             os.remove(progress_file)
     except Exception as e:
         print(f"Warning: Could not clear progress: {e}")
+
+
+def find_device_by_serial_model():
+    """
+    Search all available drives for one matching the serial and model
+    from the progress file.
+
+    Returns:
+        tuple: (device_path, device_id) if found, (None, None) otherwise
+            - device_path: str like '/dev/sdb'
+            - device_id: dict with 'serial', 'model', 'size' keys
+    """
+    # Load progress file to get saved device_id
+    progress_data = find_resume_file()
+
+    if not progress_data:
+        return None, None
+
+    if 'device_id' not in progress_data or not progress_data['device_id']:
+        return None, None
+
+    saved_id = progress_data['device_id']
+    saved_serial = saved_id.get('serial')
+    saved_model = saved_id.get('model')
+
+    if not saved_serial:
+        # Can't match without serial number
+        return None, None
+
+    # Get all block devices
+    try:
+        output = subprocess.check_output(['lsblk', '-dno', 'NAME,TYPE'])\
+            .decode().splitlines()
+        disks = ['/dev/' + line.split()[0]
+                 for line in output
+                 if len(line.split()) > 1 and line.split()[1] == 'disk']
+    except Exception as e:
+        print(f"Error listing devices: {e}")
+        return None, None
+
+    # Search for matching device
+    for device in disks:
+        try:
+            detector = DeviceDetector(device)
+            current_id = detector.get_unique_id()
+
+            # Match by serial number (primary identifier)
+            if (current_id.get('serial') and
+                    current_id['serial'] == saved_serial):
+                # Optionally verify model too for extra safety
+                if saved_model and current_id.get('model'):
+                    if current_id['model'] != saved_model:
+                        print(f"⚠️  Warning: Serial matches but model "
+                              f"differs on {device}")
+                        print(f"   Expected: {saved_model}")
+                        print(f"   Found: {current_id['model']}")
+                        # Still return it - serial is the primary identifier
+
+                return device, current_id
+        except Exception:
+            # Skip devices we can't read
+            continue
+
+    return None, None
 
 
 def find_resume_file():
@@ -489,7 +553,8 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             written = strategy.written
         print("\n\n⚠️  Wipe interrupted by user")
         print(f"• Progress saved: {written / GIGABYTE:.2f} GB written")
-        print("• To resume: run wipeit with --resume flag")
+        print("• To resume: sudo wipeit --resume")
+        print("  (will automatically detect the drive by serial number)")
         save_progress(device, written, size, chunk_size, pretest_results,
                       device_id)
         sys.exit(1)
@@ -517,7 +582,8 @@ def setup_argument_parser():
 Examples:
   wipeit /dev/sdb                    # Wipe device with default settings
   wipeit -b 1G /dev/sdb             # Use 1GB buffer size
-  wipeit --resume /dev/sdb          # Resume previous wipe
+  wipeit --resume                   # Resume previous wipe (auto-detects drive)
+  wipeit --resume /dev/sdb          # Resume on specific device (optional)
   wipeit --skip-pretest /dev/sdb    # Skip HDD pretest
   wipeit --list                     # List all available devices
 
@@ -528,11 +594,12 @@ Examples:
     parser.add_argument(
         'device',
         nargs='?',
-        help='Block device to wipe (e.g., /dev/sdb)')
+        help='Block device to wipe (e.g., /dev/sdb). Optional with --resume.')
     parser.add_argument('-b', '--buffer-size', default='100M',
                         help='Buffer size (default: 100M, range: 1M-1T)')
     parser.add_argument('--resume', action='store_true',
-                        help='Resume previous wipe session')
+                        help='Resume previous wipe session '
+                             '(auto-detects drive by serial number)')
     parser.add_argument('--skip-pretest', action='store_true',
                         help='Skip HDD pretest (use standard algorithm)')
     parser.add_argument('--list', action='store_true',
@@ -541,7 +608,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.4.4')
+        version='wipeit 1.5.0')
 
     return parser
 
@@ -563,6 +630,55 @@ def main():
         print("=" * 50)
         list_all_devices()
         return
+
+    # Handle --resume without device specification (auto-detect)
+    if args.resume and not args.device:
+        print("=" * 70)
+        print("AUTO-DETECTING RESUME DRIVE")
+        print("=" * 70)
+        detected_device, detected_id = find_device_by_serial_model()
+
+        if detected_device:
+            print(f"✓ Found matching drive: {detected_device}")
+            print(f"  Serial: {detected_id.get('serial', 'N/A')}")
+            print(f"  Model: {detected_id.get('model', 'N/A')}")
+            if detected_id.get('size'):
+                print(f"  Size: {detected_id['size'] / GIGABYTE:.2f} GB")
+            print()
+            args.device = detected_device
+        else:
+            print("🚨 ERROR: Could not find matching drive")
+            print()
+            progress_data = find_resume_file()
+            if progress_data and 'device_id' in progress_data:
+                saved_id = progress_data['device_id']
+                print("Looking for drive with:")
+                if saved_id.get('serial'):
+                    print(f"  Serial: {saved_id['serial']}")
+                if saved_id.get('model'):
+                    print(f"  Model: {saved_id['model']}")
+                print()
+            else:
+                print("No valid progress file found or missing "
+                      "device identification.")
+                print()
+
+            print("Available drives:")
+            print("=" * 50)
+            list_all_devices()
+            print()
+            print("POSSIBLE REASONS:")
+            print("  1. The original drive is not connected")
+            print("  2. The drive's serial number cannot be read")
+            print("  3. The progress file is from a different drive")
+            print()
+            print("TO RESOLVE:")
+            print("  1. Reconnect the original drive and try again")
+            print("  2. Manually specify device: "
+                  "sudo wipeit --resume /dev/sdX")
+            print(f"  3. Start fresh by removing: "
+                  f"rm {PROGRESS_FILE_NAME}")
+            sys.exit(1)
 
     # Handle no arguments - show resume info and list devices
     if not args.device:
@@ -588,7 +704,9 @@ def main():
     # Display resume information if available
     if not args.resume:
         if display_resume_info():
-            print("Use --resume flag to continue a previous session")
+            print("To continue the previous session:")
+            print("  sudo wipeit --resume")
+            print("  (will automatically detect the drive by serial number)")
             print()
 
     # Display configuration
