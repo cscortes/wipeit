@@ -206,6 +206,9 @@ You can adjust the write buffer size for better performance:
 # Use 1GB buffer for faster wiping
 sudo wipeit -b 1G /dev/sdx
 
+# Alternative syntax (same result)
+sudo wipeit --force-buffer-size 1G /dev/sdx
+
 # Use 500MB buffer
 sudo wipeit -b 500M /dev/sdx
 
@@ -216,8 +219,12 @@ sudo wipeit -b 100M /dev/sdx
 **Buffer size options:**
 - Range: `1M` (minimum) to `1T` (maximum)
 - Suffixes: `M` (megabytes), `G` (gigabytes), `T` (terabytes)
-- Default: `100M`
-- Larger buffers may improve speed but use more memory
+- Default: `100M` (when not specified)
+- Aliases: `-b`, `--buffer-size`, `--force-buffer-size` (all work the same)
+- **Important**: When you specify a buffer size, it is ALWAYS used exactly as specified
+  - Bypasses algorithm selection and pretest
+  - Your choice overrides any recommendations
+  - wipeit will inform you if your choice is unusual but will respect it
 
 ### Disk Type Detection and HDD Pretest
 

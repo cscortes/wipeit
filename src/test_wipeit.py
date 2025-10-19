@@ -465,37 +465,19 @@ class TestUtilityFunctions(unittest.TestCase):
         speed = wipeit.calculate_average_speed(GIGABYTE, 100.0)
         self.assertAlmostEqual(speed, 10.24, places=2)
 
-    def test_create_wipe_strategy_standard(self):
-        """Test create_wipe_strategy creates StandardStrategy."""
-        strategy = wipeit.create_wipe_strategy(
-            'standard', '/dev/sdb', 1000, 100, 0, None, lambda w, t, c: None)
-        self.assertIsInstance(strategy, wipeit.StandardStrategy)
-
-    def test_create_wipe_strategy_adaptive(self):
-        """Test create_wipe_strategy creates AdaptiveStrategy."""
-        pretest_results = {'recommended_algorithm': 'adaptive_chunk'}
-        strategy = wipeit.create_wipe_strategy(
-            'adaptive_chunk', '/dev/sdb', 1000, 100, 0,
-            pretest_results, lambda w, t, c: None)
-        self.assertIsInstance(strategy, wipeit.AdaptiveStrategy)
-
-    def test_create_wipe_strategy_small_chunk(self):
-        """Test create_wipe_strategy creates SmallChunkStrategy."""
-        strategy = wipeit.create_wipe_strategy(
-            'small_chunk', '/dev/sdb', 1000, 100, 0, None,
-            lambda w, t, c: None)
-        self.assertIsInstance(strategy, wipeit.SmallChunkStrategy)
-
     @patch('wipeit.load_progress')
     def test_handle_resume_no_progress(self, mock_load_progress):
         """Test handle_resume when no progress exists."""
         mock_load_progress.return_value = None
 
         with patch('sys.stdout', new_callable=StringIO):
-            written, pretest = wipeit.handle_resume('/dev/sdb')
+            written, pretest, chunk_size, algorithm = \
+                wipeit.handle_resume('/dev/sdb')
 
         self.assertEqual(written, 0)
         self.assertIsNone(pretest)
+        self.assertIsNone(chunk_size)
+        self.assertIsNone(algorithm)
 
     @patch('wipeit.load_progress')
     def test_handle_resume_with_progress(self, mock_load_progress):
@@ -504,15 +486,20 @@ class TestUtilityFunctions(unittest.TestCase):
             'written': 1000000,
             'progress_percent': 50.0,
             'timestamp': time.time(),
-            'pretest_results': {'recommended_algorithm': 'adaptive'}
+            'pretest_results': {'recommended_algorithm': 'adaptive'},
+            'chunk_size': 104857600,
+            'algorithm': 'adaptive_chunk'
         }
         mock_load_progress.return_value = progress
 
         with patch('sys.stdout', new_callable=StringIO):
-            written, pretest = wipeit.handle_resume('/dev/sdb')
+            written, pretest, chunk_size, algorithm = \
+                wipeit.handle_resume('/dev/sdb')
 
         self.assertEqual(written, 1000000)
         self.assertEqual(pretest, {'recommended_algorithm': 'adaptive'})
+        self.assertEqual(chunk_size, 104857600)
+        self.assertEqual(algorithm, 'adaptive_chunk')
 
     @patch('wipeit.load_progress')
     def test_handle_resume_with_progress_no_pretest(self, mock_load_progress):
@@ -525,10 +512,13 @@ class TestUtilityFunctions(unittest.TestCase):
         mock_load_progress.return_value = progress
 
         with patch('sys.stdout', new_callable=StringIO):
-            written, pretest = wipeit.handle_resume('/dev/sdb')
+            written, pretest, chunk_size, algorithm = \
+                wipeit.handle_resume('/dev/sdb')
 
         self.assertEqual(written, 500000)
         self.assertIsNone(pretest)
+        self.assertIsNone(chunk_size)
+        self.assertIsNone(algorithm)
 
     def test_handle_hdd_pretest_uses_existing(self):
         """Test handle_hdd_pretest uses existing pretest results."""
@@ -692,7 +682,7 @@ class TestMainFunction(unittest.TestCase):
 
         self.assertEqual(cm.exception.code, 0)
         output = mock_stdout.getvalue()
-        self.assertIn('wipeit 1.5.0', output)
+        self.assertIn('wipeit 1.6.0', output)
 
     @patch('sys.argv', ['wipeit.py'])
     @patch('os.geteuid', return_value=0)  # Mock root user
@@ -923,10 +913,10 @@ class TestIntegration(unittest.TestCase):
 
     @patch('wipeit.DeviceDetector.get_block_device_size')
     @patch('wipeit.DeviceDetector')
-    @patch('wipeit.StandardStrategy')
+    @patch('wipe_strategy_factory.WipeStrategyFactory.create_strategy')
     @patch('sys.exit')
     def test_keyboard_interrupt_saves_actual_progress(
-            self, mock_exit, mock_strategy_class, mock_detector_class,
+            self, mock_exit, mock_factory_create, mock_detector_class,
             mock_get_size):
         """Test that KeyboardInterrupt saves actual progress from strategy."""
         # Setup mocks
@@ -948,7 +938,7 @@ class TestIntegration(unittest.TestCase):
 
         # Make strategy.wipe() raise KeyboardInterrupt
         mock_strategy.wipe.side_effect = KeyboardInterrupt()
-        mock_strategy_class.return_value = mock_strategy
+        mock_factory_create.return_value = mock_strategy
 
         # Try to wipe (will be interrupted)
         try:

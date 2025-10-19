@@ -30,11 +30,16 @@ src/
 │   ├── WipeStrategy (abstract base)
 │   ├── StandardStrategy
 │   ├── SmallChunkStrategy
-│   └── AdaptiveStrategy
+│   ├── AdaptiveStrategy
+│   └── OverrideStrategy           # NEW in v1.6.0
+├── wipe_strategy_factory.py      # NEW in v1.6.0: Factory pattern for strategy creation
+├── progress_file_version.py      # NEW in v1.6.0: Progress file versioning
 ├── wipeit.py                      # Main functions and CLI interface
-├── test_wipeit.py                 # Main tests (148 tests)
+├── test_wipeit.py                 # Main tests (188 tests)
 ├── test_device_detector.py        # DeviceDetector tests
-└── test_wipe_strategy.py          # Strategy tests
+├── test_wipe_strategy.py          # Strategy tests
+├── test_wipe_strategy_factory.py  # NEW in v1.6.0: Factory tests (7 tests)
+└── test_progress_file_version.py  # NEW in v1.6.0: Versioning tests (10 tests)
 ```
 
 **Key Design Principles:**
@@ -82,6 +87,27 @@ classDiagram
         #_get_average_speed() float
     }
 
+    class OverrideStrategy {
+        +wipe() bool
+        +get_algorithm_name() str
+    }
+
+    class WipeStrategyFactory {
+        <<class>>
+        +create_strategy(algorithm, device_path, total_size, chunk_size, ...) WipeStrategy
+        +get_available_algorithms() list
+        +register_strategy(name, strategy_class) void
+        -_strategies: dict
+    }
+
+    class ProgressFileVersion {
+        <<class>>
+        +CURRENT_VERSION: int
+        +add_version_to_data(progress_data) dict
+        +migrate_progress_data(progress_data) tuple
+        +validate_progress_data(progress_data) tuple
+    }
+
     class DeviceDetector {
         +device_path: str
         +device_name: str
@@ -121,12 +147,13 @@ classDiagram
     WipeStrategy <|-- StandardStrategy
     WipeStrategy <|-- SmallChunkStrategy
     WipeStrategy <|-- AdaptiveStrategy
+    StandardStrategy <|-- OverrideStrategy
     DiskPretest ..> PretestResults : creates
 ```
 
 ### Strategy Pattern: Wiping Algorithms
 
-The core wiping functionality uses the **Strategy Pattern**, allowing different algorithms to be selected at runtime based on disk characteristics:
+The core wiping functionality uses the **Strategy Pattern**, allowing different algorithms to be selected at runtime based on disk characteristics. **New in v1.6.0**: Strategies are created via the **Factory Pattern** for clean instantiation.
 
 1. **WipeStrategy (Abstract Base Class)**
    - Defines common interface and shared functionality
@@ -139,7 +166,7 @@ The core wiping functionality uses the **Strategy Pattern**, allowing different 
    - Simple, predictable performance
 
 3. **SmallChunkStrategy**
-   - Caps chunk size at 10MB (MAX_SMALL_CHUNK_SIZE)
+   - Caps chunk size at 10MB (MAX_SMALL_CHUNK_SIZE) by default
    - Selected for slow HDDs (< 50 MB/s average)
    - Better responsiveness on slow drives
 
@@ -149,9 +176,47 @@ The core wiping functionality uses the **Strategy Pattern**, allowing different 
    - Selected for HDDs with high speed variance
    - Optimizes for varying speeds (outer vs inner tracks)
 
-**Algorithm Selection Logic:**
+5. **OverrideStrategy** *(NEW in v1.6.0)*
+   - Forces user-specified buffer size (via `-b` flag)
+   - Inherits from StandardStrategy but bypasses algorithm selection
+   - Used when user explicitly specifies buffer with `-b`/`--force-buffer-size`
+   - User's choice always respected, no algorithm overrides
+
+### Factory Pattern: Strategy Creation *(NEW in v1.6.0)*
+
+**WipeStrategyFactory** encapsulates strategy creation logic:
+
 ```python
-if disk_type == "HDD" and pretest_performed:
+class WipeStrategyFactory:
+    _strategies = {
+        'standard': StandardStrategy,
+        'adaptive_chunk': AdaptiveStrategy,
+        'small_chunk': SmallChunkStrategy,
+        'buffer_override': OverrideStrategy
+    }
+
+    @classmethod
+    def create_strategy(cls, algorithm, device_path, total_size,
+                       chunk_size, ...):
+        # Validates algorithm name
+        # Returns appropriate strategy instance
+```
+
+**Benefits:**
+- Clean separation: creation logic isolated from usage
+- Extensibility: new strategies via `register_strategy()`
+- Validation: catches unknown algorithm names early
+- Testability: factory easily mocked in tests
+
+**Algorithm Selection Logic** *(Updated in v1.6.0)*:
+```python
+# NEW in v1.6.0: User-specified buffer overrides everything
+if user_specified_buffer_size:
+    algorithm = "buffer_override"
+    # Skip pretest, use OverrideStrategy with exact buffer
+elif resume_with_saved_algorithm:
+    algorithm = saved_algorithm  # Preserve algorithm across resume
+elif disk_type == "HDD" and pretest_performed:
     if pretest.average_speed < LOW_SPEED_THRESHOLD_MBPS:
         use SmallChunkStrategy
     elif pretest.speed_variance > HIGH_VARIANCE_THRESHOLD:
@@ -160,6 +225,9 @@ if disk_type == "HDD" and pretest_performed:
         use StandardStrategy
 else:
     use StandardStrategy
+
+# Create strategy via Factory
+strategy = WipeStrategyFactory.create_strategy(algorithm, ...)
 ```
 
 ### Main Architecture Flow
@@ -308,29 +376,37 @@ graph TD
 4. Calculate average speed and variance
 5. Recommend algorithm based on thresholds
 
-#### **4. Progress Management**
-**Purpose**: Save and restore wipe progress
+#### **4. Progress Management** *(Enhanced in v1.6.0)*
+**Purpose**: Save and restore wipe progress with versioning
 
 **Key Functions**:
-- `save_progress()` - Save progress with device_id, use os.fsync() for immediate persistence
-- `load_progress()` - Load and verify device_id matches current device
+- `save_progress()` - Save progress with device_id, algorithm, version; use os.fsync() for immediate persistence
+- `load_progress()` - Load, migrate if needed, and verify device_id matches current device
 - `clear_progress()` - Remove progress file (no arguments, uses PROGRESS_FILE_NAME constant)
 - `find_resume_file()` - Find existing progress file (returns dict or None)
 - `display_resume_info()` - Show resume options at startup
 
-**Progress File Format**:
+**ProgressFileVersion Class** *(NEW in v1.6.0)*:
+- `add_version_to_data()` - Adds version field before saving
+- `migrate_progress_data()` - Migrates v1 → v2 automatically
+- `validate_progress_data()` - Validates required fields per version
+- **Current version: 2** (v1: legacy, v2: adds device_id, chunk_size, algorithm)
+
+**Progress File Format** *(v2 format)*:
 ```json
 {
+  "version": 2,
   "device": "/dev/sdb",
   "written": 1142947840,
   "total_size": 320072933376,
   "progress_percent": 0.357,
   "chunk_size": 104857600,
+  "algorithm": "adaptive_chunk",
   "timestamp": 1760224401.27,
   "pretest_results": {...},
   "device_id": {
-    "serial": "VFM201R2E81GYN",
-    "model": "Hitachi_HDT725032VLA360",
+    "serial": "EXAMPLE-SERIAL-123",
+    "model": "Example_Model_Number",
     "size": 320072933376
   }
 }
@@ -341,6 +417,7 @@ graph TD
 - `os.fsync()` ensures progress survives crashes
 - Saves every 100MB (PROGRESS_SAVE_THRESHOLD)
 - Single progress file: `wipeit_progress.json`
+- **Version management**: Automatic migration from v1, validation, forward compatibility warnings
 
 #### **5. Global Constants (global_constants.py)**
 **Purpose**: Centralized application constants

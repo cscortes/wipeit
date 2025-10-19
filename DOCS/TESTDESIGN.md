@@ -499,13 +499,14 @@ jobs:
 
 ## Test Statistics
 
-### Current Test Coverage (v1.5.0+)
-- **Total Test Classes**: 11
-- **Total Test Cases**: 82
+### Current Test Coverage (v1.6.0+)
+- **Total Test Classes**: 13
+- **Total Test Cases**: 188
 - **Test Coverage Breakdown**:
   - `TestParseSize`: 5 tests
   - `TestProgressFileFunctions`: 7 tests
   - `TestResumeFileFunctions`: 5 tests
+  - `TestUtilityFunctions`: 2 tests (Updated: now returns 4-tuple)
   - `TestDeviceInfoFunctions`: 2 tests
   - `TestMainFunction`: 4 tests
   - `TestIntegration`: 4 tests
@@ -514,6 +515,8 @@ jobs:
   - `TestMountChecking`: 6 tests (Added in 1.1.0)
   - `TestDeviceDetector`: 35 tests (Added in 1.1.0+)
   - `TestAutoDetectResume`: 7 tests (Added in 1.5.0)
+  - **`TestProgressFileVersion`: 10 tests** (Added in 1.6.0)
+  - **`TestWipeStrategyFactory`: 7 tests** (Added in 1.6.0)
 
 ### DeviceDetector Test Coverage
 The new `TestDeviceDetector` class provides comprehensive coverage of the object-oriented device detection functionality:

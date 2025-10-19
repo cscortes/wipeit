@@ -113,12 +113,13 @@ class WipeStrategy(ABC):
         filled_length = int(bar_length * self.written // self.total_size)
         return '█' * filled_length + '░' * (bar_length - filled_length)
 
-    def _display_progress(self, current_speed=None):
+    def _display_progress(self, current_speed=None, current_chunk=None):
         """
         Display progress information.
 
         Args:
             current_speed: Optional current speed in MB/s
+            current_chunk: Optional current chunk size in bytes (for adaptive)
         """
         progress_percent = (self.written / self.total_size) * 100
         eta_str = self._calculate_eta()
@@ -128,10 +129,17 @@ class WipeStrategy(ABC):
         if current_speed is not None:
             speed_str = f" Speed: {current_speed:.1f}MB/s"
 
+        # Add buffer size display
+        if current_chunk and current_chunk != self.chunk_size:
+            buffer_str = (f" Buffer: {current_chunk / MEGABYTE:.0f}MB "
+                          f"(adaptive)")
+        else:
+            buffer_str = f" Buffer: {self.chunk_size / MEGABYTE:.0f}MB"
+
         print(f"\r• Progress: {progress_percent:.1f}% |{bar}| "
               f"{self.written / GIGABYTE:.1f}GB/"
               f"{self.total_size / GIGABYTE:.1f}GB ETA: {eta_str}"
-              f"{speed_str}", end='', flush=True)
+              f"{speed_str}{buffer_str}", end='', flush=True)
 
         # Display estimated finish time at 5% milestones
         current_milestone = int(progress_percent) // \
@@ -268,6 +276,26 @@ class SmallChunkStrategy(StandardStrategy):
         return "small_chunk"
 
 
+class OverrideStrategy(StandardStrategy):
+    """
+    Buffer override strategy - forces user-specified buffer size.
+
+    Used when user explicitly specifies buffer size with
+    -b/--force-buffer-size. Bypasses algorithm selection and uses
+    standard sequential wiping with the exact buffer size requested
+    by the user.
+    """
+
+    def get_strategy_name(self):
+        """
+        Get the name of this strategy.
+
+        Returns:
+            str: "buffer_override"
+        """
+        return "buffer_override"
+
+
 class AdaptiveStrategy(WipeStrategy):
     """
     Adaptive wiping strategy with dynamic chunk sizing.
@@ -365,7 +393,8 @@ class AdaptiveStrategy(WipeStrategy):
             self.written += current_chunk_size
             self.written_since_last_save += current_chunk_size
 
-            self._display_progress(current_speed=chunk_speed)
+            self._display_progress(current_speed=chunk_speed,
+                                   current_chunk=current_chunk_size)
 
             if self.written_since_last_save >= PROGRESS_SAVE_THRESHOLD:
                 self._save_progress_checkpoint()

@@ -11,6 +11,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-10-19
+
+### Added
+- **Progress File Versioning**: New `ProgressFileVersion` class for safe format evolution
+  - Progress file now includes `version` field (current: v2)
+  - Automatic migration from v1 to v2 format
+  - Added `algorithm` field to preserve strategy across resume
+  - Added validation for required fields per version
+  - Graceful handling of future versions with warnings
+  - New module: `src/progress_file_version.py` with 10 comprehensive tests
+
+- **Factory Pattern**: Implemented `WipeStrategyFactory` for clean strategy creation
+  - Encapsulates strategy instantiation logic
+  - Registry-based design allows adding new strategies via `register_strategy()`
+  - Validates algorithm names at creation time
+  - Returns proper error messages for unknown algorithms
+  - New module: `src/wipe_strategy_factory.py` with 7 factory tests
+
+- **Buffer Override Strategy**: New `OverrideStrategy` class
+  - Used when user explicitly specifies buffer size with `-b` flag
+  - Inherits from `StandardStrategy` with forced buffer semantics
+  - Allows users to override algorithm recommendations
+
+- **Buffer Size Alias**: Added `--force-buffer-size` as alias for `-b`
+  - Makes semantics explicit: this buffer WILL be used
+  - Backwards compatible: `-b`, `--buffer-size`, and `--force-buffer-size` all work
+
+- **Buffer Size Display**: Progress output now shows current buffer size
+  - Example: `Buffer: 1024MB` or `Buffer: 50MB (adaptive)`
+  - Helps users understand what's actually happening
+  - Adaptive strategy shows current adaptive chunk size
+
+### Changed
+- **Buffer Size Behavior**: `-b` flag now operates as absolute override
+  - User-specified buffer is ALWAYS respected, no algorithm overrides
+  - Skip pretest when buffer explicitly specified
+  - Previously: `small_chunk` algorithm could override user's `-b 1G` to 10MB
+  - Now: User's choice is final, with informational messages if unusual
+
+- **Resume Consistency**: Resume now preserves exact algorithm and buffer
+  - Progress file stores `algorithm` name for perfect resume consistency
+  - `handle_resume()` now returns 4-tuple: (written, pretest, chunk_size, algorithm)
+  - Resume uses saved algorithm without re-running pretest
+  - Old v1 progress files treated as buffer override for compatibility
+
+- **Argument Parser**: Updated buffer size help text
+  - New: "When specified, bypasses algorithm selection and uses this exact buffer size"
+  - Clarifies that `-b` is an override, not a suggestion
+
+### Improved
+- **Code Architecture**: Clean separation of concerns
+  - Versioning logic isolated in dedicated module
+  - Factory pattern replaces inline strategy selection
+  - Override strategy keeps existing algorithms pure
+
+- **User Experience**: Clear feedback about buffer and algorithm choices
+  - Shows when user buffer is respected on slow drives
+  - Displays resume algorithm and buffer information
+  - Suggests alternatives but respects user's decision
+
+- **Backwards Compatibility**: Seamless handling of old progress files
+  - v1 progress files automatically upgraded to v2
+  - Missing fields gracefully handled
+  - Users see helpful upgrade messages
+
+### Tests
+- **New Test Modules**:
+  - `test_progress_file_version.py` - 10 tests for versioning
+  - `test_wipe_strategy_factory.py` - 7 tests for factory pattern
+
+- **Updated Tests**: Fixed signatures for new 4-tuple return from `handle_resume()`
+  - Updated 3 handle_resume tests
+  - Updated KeyboardInterrupt test for factory
+  - Removed 3 obsolete create_wipe_strategy tests (now factory-based)
+
+- **Total Test Count**: 188 tests passing (was 174)
+- **New Functionality Covered**:
+  - Progress file migration (v1 → v2)
+  - Factory strategy creation
+  - Buffer override behavior
+  - Resume with algorithm preservation
+
+### Security
+- **Clean codebase**: All security scans passing
+  - Bandit: 0 issues (4556 lines scanned)
+  - No high/medium/low severity issues
+
 ## [1.5.0] - 2025-10-19
 
 ### Added

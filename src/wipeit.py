@@ -76,7 +76,8 @@ def parse_size(size_str) -> int:
 
 
 def save_progress(device, written, total_size,
-                  chunk_size, pretest_results=None, device_id=None):
+                  chunk_size, pretest_results=None, device_id=None,
+                  algorithm=None):
     """
     Save wipe progress to file.
 
@@ -87,7 +88,10 @@ def save_progress(device, written, total_size,
         chunk_size: Chunk size used for wiping
         pretest_results: Optional pretest results
         device_id: Optional device unique identifiers (serial, model, etc.)
+        algorithm: Optional algorithm name for resume consistency
     """
+    from progress_file_version import ProgressFileVersion
+
     progress_file = PROGRESS_FILE_NAME
     progress_percent = (written / total_size) * 100 if total_size > 0 else 0
     progress_data = {
@@ -98,8 +102,12 @@ def save_progress(device, written, total_size,
         'chunk_size': chunk_size,
         'timestamp': time.time(),
         'pretest_results': pretest_results,
-        'device_id': device_id
+        'device_id': device_id,
+        'algorithm': algorithm
     }
+
+    # Add version number using ProgressFileVersion
+    progress_data = ProgressFileVersion.add_version_to_data(progress_data)
 
     try:
         with open(progress_file, 'w') as f:
@@ -120,6 +128,8 @@ def load_progress(device):
     Returns:
         dict: Progress data if valid, None otherwise
     """
+    from progress_file_version import ProgressFileVersion
+
     progress_file = PROGRESS_FILE_NAME
 
     if not os.path.exists(progress_file):
@@ -128,6 +138,20 @@ def load_progress(device):
     try:
         with open(progress_file, 'r') as f:
             progress_data = json.load(f)
+
+        # Migrate progress data if needed
+        progress_data, was_migrated, warning = \
+            ProgressFileVersion.migrate_progress_data(progress_data)
+
+        if warning:
+            print(f"⚠️  {warning}")
+
+        # Validate progress data
+        is_valid, error = \
+            ProgressFileVersion.validate_progress_data(progress_data)
+        if not is_valid:
+            print(f"⚠️  Progress file validation failed: {error}")
+            return None
 
         # Verify device identity if available
         if 'device_id' in progress_data and progress_data['device_id']:
@@ -290,12 +314,20 @@ def find_resume_file():
     Returns:
         dict or None: Progress data if file exists and is valid, None otherwise
     """
+    from progress_file_version import ProgressFileVersion
+
     progress_file = PROGRESS_FILE_NAME
 
     if os.path.exists(progress_file):
         try:
             with open(progress_file, 'r') as f:
-                return json.load(f)
+                progress_data = json.load(f)
+
+            # Migrate progress data if needed (silently for find)
+            progress_data, _, _ = \
+                ProgressFileVersion.migrate_progress_data(progress_data)
+
+            return progress_data
         except Exception:
             pass
 
@@ -442,15 +474,18 @@ def handle_resume(device):
         device (str): Device path
 
     Returns:
-        tuple: (written, existing_pretest_results) where:
+        tuple: (written, existing_pretest_results, saved_chunk_size,
+                saved_algorithm) where:
             - written: bytes written so far (0 if no progress)
             - existing_pretest_results: dict of pretest results or None
+            - saved_chunk_size: saved chunk size in bytes or None
+            - saved_algorithm: saved algorithm name or None
     """
     progress_data = load_progress(device)
 
     if not progress_data:
         print("No previous progress found, starting from beginning")
-        return 0, None
+        return 0, None, None, None
 
     written = progress_data['written']
     print(f"Resuming wipe from {written / GIGABYTE:.2f} GB "
@@ -463,11 +498,21 @@ def handle_resume(device):
         print(f"   Found previous pretest results from "
               f"{time.ctime(progress_data['timestamp'])}")
 
-    return written, existing_pretest_results
+    saved_chunk_size = progress_data.get('chunk_size')
+    if saved_chunk_size:
+        print(f"ℹ️  Resuming with previous buffer size: "
+              f"{saved_chunk_size / MEGABYTE:.0f} MB")
+
+    saved_algorithm = progress_data.get('algorithm')
+    if saved_algorithm:
+        print(f"ℹ️  Resuming with {saved_algorithm} algorithm")
+
+    return written, existing_pretest_results, saved_chunk_size, \
+        saved_algorithm
 
 
 def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
-                skip_pretest=False):
+                skip_pretest=False, force_buffer=False):
     """
     Wipe device using appropriate strategy (WRAPPER).
 
@@ -479,16 +524,20 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         chunk_size: Base chunk size for wiping
         resume: Whether to resume previous session
         skip_pretest: Whether to skip HDD pretest
+        force_buffer: Whether user explicitly specified buffer size
 
     Raises:
         KeyboardInterrupt: If user interrupts the wipe
         Exception: On I/O or other errors
     """
+    from wipe_strategy_factory import WipeStrategyFactory
+
     written = 0
     size = 0
     start_time = time.time()
     pretest_results = None
     device_id = None  # Initialize to None for exception handlers
+    algorithm = None
 
     try:
         size = DeviceDetector.get_block_device_size(device)
@@ -503,32 +552,61 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             print(f"   Detection details: {', '.join(details)}")
 
         if resume:
-            written, existing_pretest_results = handle_resume(device)
+            written, existing_pretest_results, saved_chunk_size, \
+                saved_algorithm = handle_resume(device)
+
+            if saved_algorithm:
+                # Resume with saved algorithm - perfect consistency
+                algorithm = saved_algorithm
+                chunk_size = saved_chunk_size or chunk_size
+                pretest_results = existing_pretest_results
+                print("   (continuing with saved algorithm and buffer)")
+            elif saved_chunk_size:
+                # Old v1 progress file - has chunk_size but no algorithm
+                chunk_size = saved_chunk_size
+                force_buffer = True
+                print("   (resuming with saved buffer size)")
         else:
             written = 0
             existing_pretest_results = None
 
-        if disk_type == "HDD" and not skip_pretest:
-            pretest_results = handle_hdd_pretest(
-                device, chunk_size, existing_pretest_results,
-                written, size, device_id)
+        # Only determine algorithm if not already set by resume
+        if not algorithm:
+            if force_buffer:
+                # User explicitly specified buffer - skip pretest
+                print(f"Using user-specified buffer: "
+                      f"{chunk_size / MEGABYTE:.0f} MB")
+                algorithm = "buffer_override"
+                pretest_results = None
+            elif disk_type == "HDD" and not skip_pretest:
+                pretest_results = handle_hdd_pretest(
+                    device, chunk_size, existing_pretest_results,
+                    written, size, device_id)
 
-        if pretest_results:
-            algorithm = pretest_results.get(
-                'recommended_algorithm', 'standard')
-            print(f"Using {algorithm} algorithm based on pretest")
-        else:
-            algorithm = "standard"
-            print(f"Using {algorithm} algorithm")
+                if pretest_results:
+                    algorithm = pretest_results.get(
+                        'recommended_algorithm', 'standard')
+                    print(f"Using {algorithm} algorithm based on pretest")
+                else:
+                    algorithm = "standard"
+                    print(f"Using {algorithm} algorithm")
+            else:
+                algorithm = "standard"
+                print(f"Using {algorithm} algorithm")
 
         def progress_callback(written_bytes, total_bytes, chunk_bytes):
             """Callback for saving progress from strategy."""
             save_progress(device, written_bytes, total_bytes, chunk_bytes,
-                          pretest_results, device_id)
+                          pretest_results, device_id, algorithm)
 
-        strategy = create_wipe_strategy(
-            algorithm, device, size, chunk_size, written,
-            pretest_results, progress_callback)
+        strategy = WipeStrategyFactory.create_strategy(
+            algorithm=algorithm,
+            device_path=device,
+            total_size=size,
+            chunk_size=chunk_size,
+            start_position=written,
+            pretest_results=pretest_results,
+            progress_callback=progress_callback)
 
         strategy.wipe()
         written = strategy.written
@@ -556,7 +634,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
         print("• To resume: sudo wipeit --resume")
         print("  (will automatically detect the drive by serial number)")
         save_progress(device, written, size, chunk_size, pretest_results,
-                      device_id)
+                      device_id, algorithm)
         sys.exit(1)
     except Exception as e:
         # Get actual progress from strategy if it was created
@@ -564,7 +642,7 @@ def wipe_device(device, chunk_size=DEFAULT_CHUNK_SIZE, resume=False,
             written = strategy.written
         print(f"\nError during wipe: {e}")
         save_progress(device, written, size, chunk_size, pretest_results,
-                      device_id)
+                      device_id, algorithm)
         sys.exit(1)
 
 
@@ -595,8 +673,12 @@ Examples:
         'device',
         nargs='?',
         help='Block device to wipe (e.g., /dev/sdb). Optional with --resume.')
-    parser.add_argument('-b', '--buffer-size', default='100M',
-                        help='Buffer size (default: 100M, range: 1M-1T)')
+    parser.add_argument(
+        '-b', '--buffer-size', '--force-buffer-size',
+        default='100M',
+        help='Buffer size (default: 100M, range: 1M-1T). '
+             'When specified, bypasses algorithm selection and uses '
+             'this exact buffer size.')
     parser.add_argument('--resume', action='store_true',
                         help='Resume previous wipe session '
                              '(auto-detects drive by serial number)')
@@ -608,7 +690,7 @@ Examples:
         '-v',
         '--version',
         action='version',
-        version='wipeit 1.5.0')
+        version='wipeit 1.6.0')
 
     return parser
 
@@ -617,6 +699,11 @@ def main():
     """Main function for CLI interface."""
     parser = setup_argument_parser()
     args = parser.parse_args()
+
+    # Detect if user explicitly specified buffer size
+    user_specified_buffer = ('-b' in sys.argv or
+                             '--buffer-size' in sys.argv or
+                             '--force-buffer-size' in sys.argv)
 
     # Check if running as root
     if os.geteuid() != 0:
@@ -795,7 +882,8 @@ def main():
 
     # Start wiping
     print("\n🚀 Starting secure wipe...")
-    wipe_device(args.device, buffer_size, args.resume, args.skip_pretest)
+    wipe_device(args.device, buffer_size, args.resume, args.skip_pretest,
+                user_specified_buffer)
 
 
 if __name__ == '__main__':
